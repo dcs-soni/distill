@@ -1,0 +1,155 @@
+{
+  "users": [
+    {
+      "name": "admin",
+      "password": "admin_password",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "distill"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "distill",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "parameters": [],
+  "policies": [
+    {
+      "vhost": "distill",
+      "name": "ha-all",
+      "pattern": ".*",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "document.exchange",
+      "vhost": "distill",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "extraction.exchange",
+      "vhost": "distill",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "validation.exchange",
+      "vhost": "distill",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "review.exchange",
+      "vhost": "distill",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "dlx.exchange",
+      "vhost": "distill",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "extraction.document.uploaded",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "extraction.document.uploaded"
+      }
+    },
+    {
+      "name": "validation.extraction.completed",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "validation.extraction.completed"
+      }
+    },
+    {
+      "name": "review.validation.needs_review",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "review.validation.needs_review"
+      }
+    },
+    {
+      "name": "dead.letter.queue",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "document.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "extraction.document.uploaded",
+      "routing_key": "document.uploaded.*",
+      "arguments": {}
+    },
+    {
+      "source": "extraction.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "validation.extraction.completed",
+      "routing_key": "extraction.completed.*",
+      "arguments": {}
+    },
+    {
+      "source": "validation.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "review.validation.needs_review",
+      "routing_key": "validation.needs_review.*",
+      "arguments": {}
+    },
+    {
+      "source": "dlx.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "dead.letter.queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}

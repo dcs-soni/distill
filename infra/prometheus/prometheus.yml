@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:3000']
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:3001']
+  - job_name: 'document-service'
+    static_configs:
+      - targets: ['document-service:3002']
+  - job_name: 'extraction-service'
+    static_configs:
+      - targets: ['extraction-service:3003']
+  - job_name: 'validation-service'
+    static_configs:
+      - targets: ['validation-service:3004']
+  - job_name: 'review-service'
+    static_configs:
+      - targets: ['review-service:3005']
+  - job_name: 'analytics-service'
+    static_configs:
+      - targets: ['analytics-service:3006']

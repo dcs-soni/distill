@@ -1,0 +1,195 @@
+services:
+  # -------------------------------------
+  # Core Infrastructure
+  # -------------------------------------
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin_password
+      - RABBITMQ_DEFAULT_VHOST=distill
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/etc/rabbitmq/definitions.json"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ../rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ../rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - '6379:6379'
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    volumes:
+      - redis-data:/data
+      - ../redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'redis_password', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - distill-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - distill-network
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set distill http://minio:9000 minioadmin minioadmin &&
+      /usr/bin/mc mb distill/distill-documents --ignore-existing &&
+      /usr/bin/mc version enable distill/distill-documents
+      "
+    networks:
+      - distill-network
+
+  # -------------------------------------
+  # Databases
+  # -------------------------------------
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: postgres-auth
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=auth_db
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata-auth:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d auth_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+  postgres-document:
+    image: postgres:16-alpine
+    container_name: postgres-document
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=document_db
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata-document:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d document_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+  postgres-review:
+    image: postgres:16-alpine
+    container_name: postgres-review
+    ports:
+      - '5434:5432'
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=review_db
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata-review:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d review_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+  postgres-extraction:
+    image: postgres:16-alpine
+    container_name: postgres-extraction
+    ports:
+      - '5435:5432'
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=extraction_db
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata-extraction:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d extraction_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+  postgres-analytics:
+    image: timescale/timescaledb:latest-pg16
+    container_name: postgres-analytics
+    ports:
+      - '5436:5432'
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=analytics_db
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata-analytics:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d analytics_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distill-network
+
+networks:
+  distill-network:
+    driver: bridge
+
+volumes:
+  rabbitmq-data:
+  redis-data:
+  minio-data:
+  pgdata-auth:
+  pgdata-document:
+  pgdata-review:
+  pgdata-extraction:
+  pgdata-analytics:

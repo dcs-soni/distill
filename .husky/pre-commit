@@ -1,1 +1,13 @@
+echo "🔍 Running detect-secrets..."
+for file in $(git diff --cached --name-only --diff-filter=ACM); do
+  if grep -q -E "[A]KIA[0-9A-Z]{16}|[a]ws_secret_access_key|[g]hp_[A-Za-z0-9]{36}" "$file"; then
+    echo "ERROR: Potential secrets detected in $file! Commit blocked."
+    exit 1
+  fi
+done
+
+echo "Running type checks..."
+npm run typecheck
+
+echo "Running lint-staged..."
 npx lint-staged

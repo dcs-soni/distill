@@ -1,9 +1,9 @@
-* @distill-admin
+* @dcs-soni
 
-/gateway/ @distill-backend
-/services/ @distill-backend
-/services/extraction-service/ @distill-ml
-/web/ @distill-frontend
-/shared/ @distill-core
-/infra/ @distill-devops
-/.github/ @distill-devops
+/gateway/ @dcs-soni
+/services/ @dcs-soni
+/services/extraction-service/ @dcs-soni
+/web/ @dcs-soni
+/shared/ @dcs-soni
+/infra/ @dcs-soni
+/.github/ @dcs-soni

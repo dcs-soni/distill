@@ -13,6 +13,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "scaffold": "bash ./scripts/scaffold-service.sh",
     "prepare": "husky",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

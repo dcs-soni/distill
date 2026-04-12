@@ -1,0 +1,9 @@
+* @distill-admin
+
+/gateway/ @distill-backend
+/services/ @distill-backend
+/services/extraction-service/ @distill-ml
+/web/ @distill-frontend
+/shared/ @distill-core
+/infra/ @distill-devops
+/.github/ @distill-devops

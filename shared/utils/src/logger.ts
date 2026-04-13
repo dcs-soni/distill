@@ -69,3 +69,5 @@ export class ContextLogger {
     this.logger.debug({ ...this.context, ...obj }, msg);
   }
 }
+
+export const logger = createLogger({ service: 'distill' });

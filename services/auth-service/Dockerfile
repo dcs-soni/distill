@@ -10,6 +10,7 @@ COPY shared/utils ./shared/utils
 RUN npm ci
 
 COPY services/auth-service ./services/auth-service
+RUN npx prisma generate --schema=./services/auth-service/prisma/schema.prisma
 RUN npm run build --workspace=services/auth-service
 
 FROM node:20-alpine AS runner

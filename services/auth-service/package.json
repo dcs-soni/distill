@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "pretypecheck": "npx prisma generate",
+    "prebuild": "npx prisma generate",
     "prelint": "npx prisma generate"
   },
   "dependencies": {

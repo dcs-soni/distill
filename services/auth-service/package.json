@@ -23,9 +23,13 @@
     "@prisma/client": "^5.12.1",
     "amqplib": "^0.10.3",
     "fastify": "^4.26.2",
+    "fastify-plugin": "^5.1.0",
+    "fastify-type-provider-zod": "^1.2.0",
     "ioredis": "^5.10.1",
+    "jose": "^4.15.9",
     "openid-client": "^5.7.1",
-    "pino": "^8.20.0"
+    "pino": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.5",

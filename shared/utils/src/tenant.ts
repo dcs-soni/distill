@@ -1,4 +1,4 @@
-import { TenantId } from '@distill/types';
+import type { TenantId } from '@distill/types';
 import { UnauthorizedError } from './errors.js';
 
 export const extractTenantId = (

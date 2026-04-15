@@ -1,6 +1,6 @@
 import { connect, ChannelModel, ConfirmChannel, Options, ConsumeMessage } from 'amqplib';
 import { ContextLogger } from './logger.js';
-import { DomainEvent } from '@distill/types';
+import type { DomainEvent } from '@distill/types';
 
 export class RabbitMQClient {
   private connection: ChannelModel | null = null;

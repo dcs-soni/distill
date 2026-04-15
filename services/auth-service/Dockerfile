@@ -28,6 +28,6 @@ COPY --from=builder /app/shared/utils /app/shared/utils
 COPY --from=builder /app/services/auth-service/dist ./services/auth-service/dist
 COPY --from=builder /app/services/auth-service/package.json ./services/auth-service/
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["node", "services/auth-service/dist/services/auth-service/src/bootstrap.js"]

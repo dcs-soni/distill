@@ -20,6 +20,7 @@ export interface OIDCProviderPort {
     nonce: string
   ): Promise<{
     sub: string;
+    issuer?: string;
     email?: string;
     name?: string;
   }>;

@@ -1,7 +1,18 @@
 import { redisClient } from '../redis/redisClient.js';
 import { ExternalServiceError } from '@distill/utils';
+import { z } from 'zod';
+import type {
+  OIDCAuthContext,
+  OIDCStateStorePort,
+} from '../../application/ports/OIDCStateStore.port.js';
 
-export class RedisOIDCStore {
+const OIDCAuthContextSchema = z.object({
+  nonce: z.string().min(1),
+  codeVerifier: z.string().min(1),
+  redirectUri: z.string().url(),
+});
+
+export class RedisOIDCStore implements OIDCStateStorePort {
   async saveAuthContext(
     state: string,
     nonce: string,
@@ -16,15 +27,12 @@ export class RedisOIDCStore {
     }
   }
 
-  async getAuthContext(
-    state: string
-  ): Promise<{ nonce: string; codeVerifier: string; redirectUri: string } | null> {
+  async getAuthContext(state: string): Promise<OIDCAuthContext | null> {
     try {
       const v = await redisClient.get(`oidc:state:${state}`);
       if (!v) return null;
-      // Delete after fetch for one-time use (PKCE replay protection)
       await redisClient.del(`oidc:state:${state}`);
-      return JSON.parse(v) as { nonce: string; codeVerifier: string; redirectUri: string };
+      return OIDCAuthContextSchema.parse(JSON.parse(v));
     } catch (e) {
       throw new ExternalServiceError('Failed to get OIDC state', e);
     }

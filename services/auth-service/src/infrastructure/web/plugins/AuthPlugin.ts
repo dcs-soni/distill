@@ -1,14 +1,10 @@
 import fp from 'fastify-plugin';
-import type { preHandlerAsyncHookHandler } from 'fastify';
+import type { FastifyPluginCallback, preHandlerAsyncHookHandler } from 'fastify';
 import { JwtSessionService } from '../../services/JwtSessionService.js';
 import { UnauthorizedError } from '@distill/utils';
+import type { AuthenticatedSession } from '../../../application/ports/SessionService.port.js';
 
-export interface AuthenticatedUser {
-  userId: string;
-  tenantId: string;
-  role: string;
-  sid: string;
-}
+export type AuthenticatedUser = AuthenticatedSession;
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -20,7 +16,7 @@ declare module 'fastify' {
   }
 }
 
-export const AuthPlugin = fp((fastify, _opts, done) => {
+const authPlugin: FastifyPluginCallback = (fastify, _opts, done) => {
   const sessionService = new JwtSessionService();
 
   const authenticate: preHandlerAsyncHookHandler = async (request, reply) => {
@@ -43,4 +39,6 @@ export const AuthPlugin = fp((fastify, _opts, done) => {
 
   fastify.decorate('authenticate', authenticate);
   done();
-});
+};
+
+export const AuthPlugin = fp(authPlugin);

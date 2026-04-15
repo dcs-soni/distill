@@ -7,6 +7,9 @@ import { AssignRole } from '../../../application/use-cases/AssignRole.js';
 import { ListTenantMembers } from '../../../application/use-cases/ListTenantMembers.js';
 import { SwitchTenant } from '../../../application/use-cases/SwitchTenant.js';
 import { JwtSessionService } from '../../services/JwtSessionService.js';
+import { PrismaAuthRepository } from '../../persistence/PrismaAuthRepository.js';
+import { ListUserTenants } from '../../../application/use-cases/ListUserTenants.js';
+import { RemoveTenantMember } from '../../../application/use-cases/RemoveTenantMember.js';
 import {
   CreateTenantSchema,
   InviteMemberSchema,
@@ -32,18 +35,23 @@ type TenantMemberParams = {
 
 export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
   const sessionService = new JwtSessionService();
-  const createTenantUc = new CreateTenant();
-  const inviteMemberUc = new InviteMember();
-  const assignRoleUc = new AssignRole();
-  const listTenantMembersUc = new ListTenantMembers();
-  const switchTenantUc = new SwitchTenant(sessionService);
+  const authRepository = new PrismaAuthRepository();
+  const createTenantUc = new CreateTenant(authRepository);
+  const inviteMemberUc = new InviteMember(authRepository);
+  const assignRoleUc = new AssignRole(authRepository);
+  const listTenantMembersUc = new ListTenantMembers(authRepository);
+  const switchTenantUc = new SwitchTenant(authRepository, sessionService);
+  const listUserTenantsUc = new ListUserTenants(authRepository);
+  const removeTenantMemberUc = new RemoveTenantMember(authRepository);
 
   const controller = new TenantController(
     createTenantUc,
     inviteMemberUc,
     assignRoleUc,
     listTenantMembersUc,
-    switchTenantUc
+    switchTenantUc,
+    listUserTenantsUc,
+    removeTenantMemberUc
   );
 
   const route = app.withTypeProvider<ZodTypeProvider>();

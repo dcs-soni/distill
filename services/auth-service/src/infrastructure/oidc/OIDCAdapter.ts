@@ -1,7 +1,10 @@
 import { Issuer, Client, TokenSet } from 'openid-client';
-import { OIDCProviderPort } from '../../application/ports/OIDCProvider.port.js';
-import { ExternalServiceError, UnauthorizedError } from '@distill/utils';
-import { logger } from '@distill/utils';
+import { ExternalServiceError, UnauthorizedError, logger } from '@distill/utils';
+import type { OIDCProviderPort } from '../../application/ports/OIDCProvider.port.js';
+
+const toError = (error: unknown): Error => {
+  return error instanceof Error ? error : new Error(String(error));
+};
 
 export class OIDCAdapter implements OIDCProviderPort {
   private client: Client | null = null;
@@ -20,9 +23,9 @@ export class OIDCAdapter implements OIDCProviderPort {
         client_secret: this.clientSecret,
         response_types: ['code'],
       });
-      logger.info(`Discovered OIDC Provider: ${this.issuer.issuer as string}`);
+      logger.info(`Discovered OIDC Provider: ${String(this.issuer.issuer)}`);
     } catch (error) {
-      logger.error(error as Error, `Failed to discover OIDC provider at ${issuerUrl}`);
+      logger.error(toError(error), `Failed to discover OIDC provider at ${issuerUrl}`);
       throw new ExternalServiceError(`OIDC Discovery Failed`, error);
     }
   }
@@ -65,13 +68,12 @@ export class OIDCAdapter implements OIDCProviderPort {
         refreshToken: tokenSet.refresh_token,
       };
     } catch (error) {
-      logger.error(error as Error, 'Error exchanging code to token');
+      logger.error(toError(error), 'Error exchanging code to token');
       throw new UnauthorizedError('Failed to exchange auth code', error);
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async verifyIdToken(idToken: string, nonce: string) {
+  verifyIdToken(idToken: string, nonce: string) {
     if (!this.client) throw new Error('OIDC client not initialized');
 
     try {
@@ -82,13 +84,14 @@ export class OIDCAdapter implements OIDCProviderPort {
         throw new UnauthorizedError('Nonce mismatch in ID token');
       }
 
-      return {
+      return Promise.resolve({
         sub: claims.sub,
+        issuer: claims.iss,
         email: claims.email,
         name: claims.name,
-      };
+      });
     } catch (error) {
-      logger.error(error as Error, 'Error verifying ID Token');
+      logger.error(toError(error), 'Error verifying ID Token');
       throw new UnauthorizedError('Invalid ID Token', error);
     }
   }
@@ -99,7 +102,7 @@ export class OIDCAdapter implements OIDCProviderPort {
     try {
       return await this.client.userinfo(accessToken);
     } catch (error) {
-      logger.error(error as Error, 'Error fetching user profile');
+      logger.error(toError(error), 'Error fetching user profile');
       throw new ExternalServiceError('Failed to fetch userinfo', error);
     }
   }
@@ -120,7 +123,7 @@ export class OIDCAdapter implements OIDCProviderPort {
         refreshToken: tokenSet.refresh_token,
       };
     } catch (error) {
-      logger.error(error as Error, 'Error refreshing access token');
+      logger.error(toError(error), 'Error refreshing access token');
       throw new UnauthorizedError('Invalid or expired refresh token', error);
     }
   }

@@ -6,6 +6,7 @@ import { RedisOIDCStore } from '../../oidc/RedisOIDCStore.js';
 import { HandleOIDCCallback } from '../../../application/use-cases/HandleOIDCCallback.js';
 import { GetUserProfile } from '../../../application/use-cases/GetUserProfile.js';
 import { JwtSessionService } from '../../services/JwtSessionService.js';
+import { PrismaAuthRepository } from '../../persistence/PrismaAuthRepository.js';
 import {
   OIDCCallbackSchema,
   AuthResponseSchema,
@@ -28,8 +29,14 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   const oidcStore = new RedisOIDCStore();
   const sessionService = new JwtSessionService();
-  const handleCallbackUc = new HandleOIDCCallback(oidcAdapter, oidcStore, sessionService);
-  const getUserProfileUc = new GetUserProfile();
+  const authRepository = new PrismaAuthRepository();
+  const handleCallbackUc = new HandleOIDCCallback(
+    oidcAdapter,
+    oidcStore,
+    sessionService,
+    authRepository
+  );
+  const getUserProfileUc = new GetUserProfile(authRepository);
 
   const controller = new AuthController(
     oidcAdapter,

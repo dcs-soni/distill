@@ -1,30 +1,63 @@
-import { SignJWT, jwtVerify, generateKeyPair, KeyLike } from 'jose';
+import { SignJWT, jwtVerify, generateKeyPair, importPKCS8, importSPKI, KeyLike } from 'jose';
 import prismaClient from '../persistence/prismaClient.js';
 import { redisClient } from '../redis/redisClient.js';
 import { UnauthorizedError, ExternalServiceError, hashValue } from '@distill/utils';
 import crypto from 'crypto';
+import type {
+  AuthenticatedSession,
+  SessionServicePort,
+  SessionTokens,
+} from '../../application/ports/SessionService.port.js';
 
-export class JwtSessionService {
+const ACCESS_TOKEN_TTL = '15m';
+const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+const readPemEnv = (name: string): string | undefined => {
+  return process.env[name]?.replace(/\\n/g, '\n');
+};
+
+const getStringClaim = (payload: Record<string, unknown>, key: string): string => {
+  const value = payload[key];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new UnauthorizedError(`Invalid or missing ${key} claim`);
+  }
+  return value;
+};
+
+export class JwtSessionService implements SessionServicePort {
   private static privateKey: KeyLike;
   public static publicKey: KeyLike;
   private static initialized = false;
 
-  public static async initKeys() {
+  public static async initKeys(): Promise<void> {
     if (this.initialized) return;
+
+    const privateKeyPem = readPemEnv('JWT_PRIVATE_KEY');
+    const publicKeyPem = readPemEnv('JWT_PUBLIC_KEY');
+
+    if (privateKeyPem && publicKeyPem) {
+      this.privateKey = await importPKCS8(privateKeyPem, 'ES256');
+      this.publicKey = await importSPKI(publicKeyPem, 'ES256');
+      this.initialized = true;
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new ExternalServiceError('JWT_PRIVATE_KEY and JWT_PUBLIC_KEY are required');
+    }
+
     const { publicKey, privateKey } = await generateKeyPair('ES256');
     this.publicKey = publicKey;
     this.privateKey = privateKey;
     this.initialized = true;
   }
 
-  async createSession(userId: string, tenantId: string, role: string) {
+  async createSession(userId: string, tenantId: string, role: string): Promise<SessionTokens> {
     if (!JwtSessionService.initialized) await JwtSessionService.initKeys();
 
     const refreshToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashValue(refreshToken);
-
-    // 7 days for refresh token
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000);
 
     const session = await prismaClient.session.create({
       data: {
@@ -45,7 +78,7 @@ export class JwtSessionService {
     })
       .setProtectedHeader({ alg: 'ES256' })
       .setIssuedAt()
-      .setExpirationTime('15m')
+      .setExpirationTime(ACCESS_TOKEN_TTL)
       .setIssuer('distill-auth')
       .setAudience('distill-gateway')
       .sign(JwtSessionService.privateKey);
@@ -57,7 +90,7 @@ export class JwtSessionService {
     };
   }
 
-  async verifySession(token: string) {
+  async verifySession(token: string): Promise<AuthenticatedSession> {
     if (!JwtSessionService.initialized) await JwtSessionService.initKeys();
 
     try {
@@ -66,16 +99,17 @@ export class JwtSessionService {
         audience: 'distill-gateway',
       });
 
-      const sid = payload.sid as string;
+      const claims = payload as Record<string, unknown>;
+      const sid = getStringClaim(claims, 'sid');
       const isRevoked = await redisClient.get(`session:revoked:${sid}`);
       if (isRevoked) {
         throw new UnauthorizedError('Session has been revoked');
       }
 
       return {
-        userId: payload.sub as string,
-        tenantId: payload.tenantId as string,
-        role: payload.role as string,
+        userId: getStringClaim(claims, 'sub'),
+        tenantId: getStringClaim(claims, 'tenantId'),
+        role: getStringClaim(claims, 'role'),
         sid,
       };
     } catch (e) {
@@ -87,11 +121,10 @@ export class JwtSessionService {
     }
   }
 
-  async revokeSession(sessionId: string) {
+  async revokeSession(sessionId: string): Promise<void> {
     try {
       await prismaClient.session.delete({ where: { id: sessionId } }).catch(() => null);
-      // Blacklist the session id in redis for a long time (7 days maximum life)
-      await redisClient.setex(`session:revoked:${sessionId}`, 7 * 24 * 60 * 60, '1');
+      await redisClient.setex(`session:revoked:${sessionId}`, REFRESH_TOKEN_TTL_SECONDS, '1');
     } catch (e) {
       throw new ExternalServiceError(
         'Failed to revoke session',
@@ -100,7 +133,7 @@ export class JwtSessionService {
     }
   }
 
-  async refreshSession(refreshToken: string) {
+  async refreshSession(refreshToken: string): Promise<SessionTokens> {
     const tokenHash = hashValue(refreshToken);
 
     const session = await prismaClient.session.findUnique({

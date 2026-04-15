@@ -1,18 +1,18 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { OIDCAdapter } from '../../oidc/OIDCAdapter.js';
-import { RedisOIDCStore } from '../../oidc/RedisOIDCStore.js';
 import { HandleOIDCCallback } from '../../../application/use-cases/HandleOIDCCallback.js';
 import { GetUserProfile } from '../../../application/use-cases/GetUserProfile.js';
-import { JwtSessionService } from '../../services/JwtSessionService.js';
 import crypto from 'crypto';
+import type { OIDCProviderPort } from '../../../application/ports/OIDCProvider.port.js';
+import type { OIDCStateStorePort } from '../../../application/ports/OIDCStateStore.port.js';
+import type { SessionServicePort } from '../../../application/ports/SessionService.port.js';
 
 export class AuthController {
   constructor(
-    private oidcAdapter: OIDCAdapter,
-    private oidcStore: RedisOIDCStore,
-    private handleOidcCallback: HandleOIDCCallback,
-    private getUserProfile: GetUserProfile,
-    private sessionService: JwtSessionService
+    private readonly oidcAdapter: OIDCProviderPort,
+    private readonly oidcStore: OIDCStateStorePort,
+    private readonly handleOidcCallback: HandleOIDCCallback,
+    private readonly getUserProfile: GetUserProfile,
+    private readonly sessionService: SessionServicePort
   ) {}
 
   async authorize(request: FastifyRequest, reply: FastifyReply) {

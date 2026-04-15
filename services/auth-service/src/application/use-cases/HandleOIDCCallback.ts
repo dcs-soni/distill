@@ -33,7 +33,7 @@ export class HandleOIDCCallback {
 
     const user = await this.authRepository.upsertOIDCUser({
       oidcSubject: userInfo.sub,
-      oidcIssuer: userInfo.issuer ?? 'default',
+      oidcIssuer: 'default',
       email: userInfo.email,
       name: userInfo.name ?? '',
       lastLoginAt: new Date(),

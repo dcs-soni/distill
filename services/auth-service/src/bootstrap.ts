@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { logger } from '@distill/utils';
+import { AppError, logger } from '@distill/utils';
 
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { AuthPlugin } from './infrastructure/web/plugins/AuthPlugin.js';
@@ -22,6 +22,27 @@ void server.register(AuthPlugin);
 void server.register(authRoutes, { prefix: '/auth' });
 void server.register(tenantRoutes, { prefix: '/tenants' });
 
+server.setErrorHandler((error, _request, reply) => {
+  if (error instanceof AppError) {
+    const response: { error: string; message: string; details?: unknown } = {
+      error: error.code,
+      message: error.message,
+    };
+
+    if (process.env.NODE_ENV !== 'production' && error.details !== undefined) {
+      response.details = error.details;
+    }
+
+    return reply.status(error.statusCode).send(response);
+  }
+
+  logger.error(error, 'Unhandled request error');
+  return reply.status(500).send({
+    error: 'INTERNAL_SERVER_ERROR',
+    message: 'Internal server error',
+  });
+});
+
 server.get('/health', async (_, reply) => {
   return reply.send({ status: 'ok' });
 });
@@ -36,7 +57,7 @@ server.get('/metrics', async (_, reply) => {
 
 const start = async () => {
   try {
-    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await server.listen({ port, host: '0.0.0.0' });
     logger.info(
       { service: process.env.SERVICE_NAME || 'unknown' },
@@ -67,7 +88,7 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason) => {
-  logger.error(reason as Error, 'Unhandled Rejection');
+  logger.error(reason, 'Unhandled Rejection');
   process.exit(1);
 });
 

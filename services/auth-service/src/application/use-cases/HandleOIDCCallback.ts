@@ -1,14 +1,16 @@
-import { OIDCProviderPort } from '../ports/OIDCProvider.port.js';
-import { RedisOIDCStore } from '../../infrastructure/oidc/RedisOIDCStore.js';
-import { JwtSessionService } from '../../infrastructure/services/JwtSessionService.js';
-import prismaClient from '../../infrastructure/persistence/prismaClient.js';
+import { randomBytes } from 'node:crypto';
 import { UnauthorizedError, NotFoundError } from '@distill/utils';
+import type { AuthRepositoryPort } from '../ports/AuthRepository.port.js';
+import type { OIDCProviderPort } from '../ports/OIDCProvider.port.js';
+import type { OIDCStateStorePort } from '../ports/OIDCStateStore.port.js';
+import type { SessionServicePort } from '../ports/SessionService.port.js';
 
 export class HandleOIDCCallback {
   constructor(
-    private oidcProvider: OIDCProviderPort,
-    private oidcStore: RedisOIDCStore,
-    private sessionService: JwtSessionService
+    private readonly oidcProvider: OIDCProviderPort,
+    private readonly oidcStore: OIDCStateStorePort,
+    private readonly sessionService: SessionServicePort,
+    private readonly authRepository: AuthRepositoryPort
   ) {}
 
   async execute(code: string, state: string) {
@@ -29,61 +31,40 @@ export class HandleOIDCCallback {
       throw new UnauthorizedError('OIDC provider did not return an email');
     }
 
-    // Upsert User
-    const user = await prismaClient.user.upsert({
-      where: { oidcSubject: userInfo.sub },
-      update: {
-        lastLoginAt: new Date(),
-        email: userInfo.email,
-        name: userInfo.name || '',
-      },
-      create: {
-        oidcSubject: userInfo.sub,
-        oidcIssuer: 'default', // Ideally from provider info
-        email: userInfo.email,
-        name: userInfo.name || '',
-        lastLoginAt: new Date(),
-      },
+    const user = await this.authRepository.upsertOIDCUser({
+      oidcSubject: userInfo.sub,
+      oidcIssuer: userInfo.issuer ?? 'default',
+      email: userInfo.email,
+      name: userInfo.name ?? '',
+      lastLoginAt: new Date(),
     });
 
-    // Check memberships
-    let tenantIdStr = '';
+    let tenantId = '';
     let role = 'ADMIN';
 
-    const membership = await prismaClient.tenantMember.findFirst({
-      where: { userId: user.id },
-      include: { tenant: true },
-    });
+    const membership = await this.authRepository.findFirstMembershipWithTenant(user.id);
 
     if (!membership) {
-      // First login - create default tenant
-      const slugBase = userInfo.name
-        ? userInfo.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-        : 'tenant';
-      const slug = `${slugBase}-${Math.random().toString(36).substring(2, 6)}`;
+      const normalizedName = (userInfo.name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const slugBase = normalizedName.length > 0 ? normalizedName : 'tenant';
+      const slug = `${slugBase}-${randomBytes(4).toString('hex')}`;
 
-      const newTenant = await prismaClient.tenant.create({
-        data: {
-          name: `${userInfo.name || 'User'}'s Organization`,
-          slug,
-          memberships: {
-            create: {
-              userId: user.id,
-              role: 'ADMIN',
-            },
-          },
-        },
+      const newTenant = await this.authRepository.createTenantWithAdminMember({
+        userId: user.id,
+        name: `${userInfo.name ?? 'User'}'s Organization`,
+        slug,
+        role: 'ADMIN',
       });
-      tenantIdStr = newTenant.id;
+      tenantId = newTenant.id;
     } else {
-      tenantIdStr = membership.tenantId;
+      tenantId = membership.tenantId;
       role = membership.role;
     }
 
-    const tenant = await prismaClient.tenant.findUnique({ where: { id: tenantIdStr } });
+    const tenant = await this.authRepository.findTenantById(tenantId);
     if (!tenant) throw new NotFoundError('Tenant not found');
 
-    const sessionTokens = await this.sessionService.createSession(user.id, tenantIdStr, role);
+    const sessionTokens = await this.sessionService.createSession(user.id, tenantId, role);
 
     return {
       accessToken: sessionTokens.accessToken,

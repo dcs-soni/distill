@@ -1,26 +1,20 @@
-import prismaClient from '../../infrastructure/persistence/prismaClient.js';
 import { ConflictError } from '@distill/utils';
+import type { AuthRepositoryPort } from '../ports/AuthRepository.port.js';
 
 export class CreateTenant {
+  constructor(private readonly authRepository: AuthRepositoryPort) {}
+
   async execute(userId: string, name: string, slug: string) {
-    const existing = await prismaClient.tenant.findUnique({ where: { slug } });
+    const existing = await this.authRepository.findTenantBySlug(slug);
     if (existing) {
       throw new ConflictError(`Tenant with slug ${slug} already exists`);
     }
 
-    const tenant = await prismaClient.tenant.create({
-      data: {
-        name,
-        slug,
-        memberships: {
-          create: {
-            userId,
-            role: 'ADMIN',
-          },
-        },
-      },
+    return this.authRepository.createTenantWithAdminMember({
+      userId,
+      name,
+      slug,
+      role: 'ADMIN',
     });
-
-    return tenant;
   }
 }

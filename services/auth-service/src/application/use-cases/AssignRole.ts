@@ -1,19 +1,15 @@
-import prismaClient from '../../infrastructure/persistence/prismaClient.js';
 import { NotFoundError } from '@distill/utils';
+import type { AuthRepositoryPort } from '../ports/AuthRepository.port.js';
 
 export class AssignRole {
-  async execute(tenantId: string, memberId: string, newRole: string) {
-    const membership = await prismaClient.tenantMember.findFirst({
-      where: { id: memberId, tenantId },
-    });
+  constructor(private readonly authRepository: AuthRepositoryPort) {}
 
+  async execute(tenantId: string, memberId: string, newRole: string) {
+    const membership = await this.authRepository.findTenantMember(tenantId, memberId);
     if (!membership) {
       throw new NotFoundError('Tenant member not found');
     }
 
-    return await prismaClient.tenantMember.update({
-      where: { id: memberId },
-      data: { role: newRole },
-    });
+    return this.authRepository.updateTenantMemberRole(memberId, newRole);
   }
 }

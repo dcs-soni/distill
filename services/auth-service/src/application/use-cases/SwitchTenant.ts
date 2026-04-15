@@ -1,18 +1,15 @@
-import prismaClient from '../../infrastructure/persistence/prismaClient.js';
 import { ForbiddenError } from '@distill/utils';
-import { JwtSessionService } from '../../infrastructure/services/JwtSessionService.js';
+import type { AuthRepositoryPort } from '../ports/AuthRepository.port.js';
+import type { SessionServicePort } from '../ports/SessionService.port.js';
 
 export class SwitchTenant {
-  constructor(private sessionService: JwtSessionService) {}
+  constructor(
+    private readonly authRepository: AuthRepositoryPort,
+    private readonly sessionService: SessionServicePort
+  ) {}
 
   async execute(userId: string, currentSessionId: string, targetTenantId: string) {
-    const membership = await prismaClient.tenantMember.findUnique({
-      where: {
-        tenantId_userId: { tenantId: targetTenantId, userId },
-      },
-      include: { tenant: true },
-    });
-
+    const membership = await this.authRepository.findTenantMembershipByUser(targetTenantId, userId);
     if (!membership || !membership.tenant.isActive) {
       throw new ForbiddenError('Not a member of this tenant or tenant is inactive');
     }
@@ -23,7 +20,6 @@ export class SwitchTenant {
       membership.role
     );
 
-    // Optional: Revoke the old session so they don't have multiple parallel sessions locally
     await this.sessionService.revokeSession(currentSessionId).catch(() => {});
 
     return {

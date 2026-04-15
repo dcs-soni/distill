@@ -1,9 +1,9 @@
 import type { AuthRepositoryPort } from '../ports/AuthRepository.port.js';
 
-export class ListTenantMembers {
+export class ListUserTenants {
   constructor(private readonly authRepository: AuthRepositoryPort) {}
 
-  async execute(tenantId: string) {
-    return this.authRepository.listTenantMembers(tenantId);
+  async execute(userId: string) {
+    return this.authRepository.listUserTenants(userId);
   }
 }

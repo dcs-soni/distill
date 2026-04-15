@@ -4,17 +4,19 @@ import { InviteMember } from '../../../application/use-cases/InviteMember.js';
 import { AssignRole } from '../../../application/use-cases/AssignRole.js';
 import { ListTenantMembers } from '../../../application/use-cases/ListTenantMembers.js';
 import { SwitchTenant } from '../../../application/use-cases/SwitchTenant.js';
+import { ListUserTenants } from '../../../application/use-cases/ListUserTenants.js';
+import { RemoveTenantMember } from '../../../application/use-cases/RemoveTenantMember.js';
 import { ForbiddenError } from '@distill/utils';
-import prismaClient from '../../persistence/prismaClient.js';
-import type { Tenant } from '@prisma/client';
 
 export class TenantController {
   constructor(
-    private createTenantUc: CreateTenant,
-    private inviteMemberUc: InviteMember,
-    private assignRoleUc: AssignRole,
-    private listTenantMembersUc: ListTenantMembers,
-    private switchTenantUc: SwitchTenant
+    private readonly createTenantUc: CreateTenant,
+    private readonly inviteMemberUc: InviteMember,
+    private readonly assignRoleUc: AssignRole,
+    private readonly listTenantMembersUc: ListTenantMembers,
+    private readonly switchTenantUc: SwitchTenant,
+    private readonly listUserTenantsUc: ListUserTenants,
+    private readonly removeTenantMemberUc: RemoveTenantMember
   ) {}
 
   async createTenant(
@@ -32,11 +34,7 @@ export class TenantController {
 
   async listTenants(request: FastifyRequest, reply: FastifyReply) {
     if (!request.user) throw new ForbiddenError('Unauthorized');
-    const user = await prismaClient.user.findUnique({
-      where: { id: request.user.userId },
-      include: { memberships: { include: { tenant: true } } },
-    });
-    const tenants: Tenant[] = user?.memberships.map(({ tenant }) => tenant) ?? [];
+    const tenants = await this.listUserTenantsUc.execute(request.user.userId);
     return reply.send(tenants);
   }
 
@@ -86,7 +84,7 @@ export class TenantController {
     reply: FastifyReply
   ) {
     if (request.user?.role !== 'ADMIN') throw new ForbiddenError('Requires ADMIN role');
-    await prismaClient.tenantMember.delete({ where: { id: request.params.memberId } });
+    await this.removeTenantMemberUc.execute(request.params.id, request.params.memberId);
     return reply.send({ success: true });
   }
 }

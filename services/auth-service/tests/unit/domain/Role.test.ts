@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Role } from '../../../src/domain/value-objects/Role.js';
 import { ValidationError } from '@distill/utils';
+import { Role } from '../../../src/domain/value-objects/Role.js';
 
 describe('Role Value Object', () => {
   it('should create valid role', () => {

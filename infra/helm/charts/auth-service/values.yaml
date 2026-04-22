@@ -1,0 +1,33 @@
+replicaCount: 2
+
+image:
+  repository: distill/auth-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3001
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  NODE_ENV: production
+  PORT: 3001
+  REDIS_URL: "redis://distill-redis-master:6379"
+
+secrets:
+  OIDC_CLIENT_ID: ""
+  OIDC_CLIENT_SECRET: ""
+  OIDC_ISSUER_URL: ""
+  DATABASE_URL: ""
+  JWT_PRIVATE_KEY: ""

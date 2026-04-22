@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gateway.fullname" . }}-config
+  labels:
+    {{- include "gateway.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.env.NODE_ENV | quote }}
+  PORT: {{ .Values.env.PORT | quote }}
+  REDIS_URL: {{ .Values.env.REDIS_URL | quote }}
+  AUTH_SERVICE_URL: {{ .Values.env.AUTH_SERVICE_URL | quote }}
+  DOCUMENT_SERVICE_URL: {{ .Values.env.DOCUMENT_SERVICE_URL | quote }}
+  EXTRACTION_SERVICE_URL: {{ .Values.env.EXTRACTION_SERVICE_URL | quote }}
+  VALIDATION_SERVICE_URL: {{ .Values.env.VALIDATION_SERVICE_URL | quote }}
+  REVIEW_SERVICE_URL: {{ .Values.env.REVIEW_SERVICE_URL | quote }}
+  ANALYTICS_SERVICE_URL: {{ .Values.env.ANALYTICS_SERVICE_URL | quote }}
+  NOTIFICATION_SERVICE_URL: {{ .Values.env.NOTIFICATION_SERVICE_URL | quote }}
+  # In a real environment, JWT_PUBLIC_KEY would be loaded from a Secret
+  JWT_PUBLIC_KEY: {{ .Values.env.JWT_PUBLIC_KEY | quote }}

@@ -1,0 +1,36 @@
+replicaCount: 2
+
+image:
+  repository: distill/gateway
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: true
+  host: localhost
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  NODE_ENV: production
+  PORT: 3000
+  JWT_PUBLIC_KEY: "" # Overridden via secrets
+  REDIS_URL: "redis://distill-redis-master:6379"
+  AUTH_SERVICE_URL: "http://auth-service:3001"
+  DOCUMENT_SERVICE_URL: "http://document-service:3002"
+  EXTRACTION_SERVICE_URL: "http://extraction-service:3003"
+  VALIDATION_SERVICE_URL: "http://validation-service:3004"
+  REVIEW_SERVICE_URL: "http://review-service:3005"
+  ANALYTICS_SERVICE_URL: "http://analytics-service:3006"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:3007"

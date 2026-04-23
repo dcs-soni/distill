@@ -1,0 +1,48 @@
+{
+  "name": "@distill/document-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/bootstrap.ts",
+    "build": "tsc",
+    "start": "node dist/services/document-service/src/bootstrap.js",
+    "pretest": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
+    "test": "vitest run tests/unit",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "npx dotenv-cli -e .env.test -- vitest run tests/integration",
+    "pretest:integration": "npx dotenv-cli -e .env.test -- npx prisma migrate deploy --schema=src/infrastructure/persistence/prisma/schema.prisma",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "pretypecheck": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
+    "prebuild": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
+    "prelint": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@distill/types": "*",
+    "@distill/utils": "*",
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/multipart": "^9.0.3",
+    "@prisma/client": "^5.12.1",
+    "amqplib": "^0.10.3",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "fastify-type-provider-zod": "^6.1.0",
+    "file-type": "^19.6.0",
+    "pino": "^8.20.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.5",
+    "@types/node": "^20.12.7",
+    "@vitest/coverage-v8": "^1.6.1",
+    "prisma": "^5.12.1",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
+  }
+}

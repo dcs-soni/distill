@@ -19,18 +19,15 @@ RUN apk add --no-cache tini
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup
+COPY --from=builder --chown=node:node /app/package*.json ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/shared/types /app/shared/types
+COPY --from=builder --chown=node:node /app/shared/utils /app/shared/utils
+COPY --from=builder --chown=node:node /app/services/document-service/dist ./services/document-service/dist
+COPY --from=builder --chown=node:node /app/services/document-service/package.json ./services/document-service/
+COPY --from=builder --chown=node:node /app/services/document-service/src/infrastructure/persistence/prisma ./services/document-service/prisma
 
-COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
-COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --from=builder --chown=appuser:appgroup /app/shared/types /app/shared/types
-COPY --from=builder --chown=appuser:appgroup /app/shared/utils /app/shared/utils
-COPY --from=builder --chown=appuser:appgroup /app/services/document-service/dist ./services/document-service/dist
-COPY --from=builder --chown=appuser:appgroup /app/services/document-service/package.json ./services/document-service/
-COPY --from=builder --chown=appuser:appgroup /app/services/document-service/src/infrastructure/persistence/prisma ./services/document-service/prisma
-
-USER appuser
+USER node
 
 EXPOSE 3002
 

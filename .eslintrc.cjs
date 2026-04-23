@@ -27,10 +27,19 @@ module.exports = {
     'build/',
     'coverage/',
     '.eslintrc.cjs',
-    'vite.config.ts',
-    'tailwind.config.ts',
   ],
   overrides: [
+    {
+      files: ['web/**/*.{ts,tsx}'],
+      parserOptions: {
+        project: ['./web/tsconfig.app.json', './web/tsconfig.node.json'],
+        tsconfigRootDir: __dirname,
+      },
+    },
+    {
+      files: ['web/**/*.{js,cjs,mjs}', '*.config.js'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+    },
     {
       files: ['**/tests/**/*.ts', '**/tests/**/*.tsx'],
       rules: {

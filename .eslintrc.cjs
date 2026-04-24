@@ -26,6 +26,7 @@ module.exports = {
     'dist/',
     'build/',
     'coverage/',
+    '**/generated/**',
     '.eslintrc.cjs',
   ],
   overrides: [

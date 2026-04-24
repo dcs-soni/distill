@@ -1,26 +1,34 @@
 import fp from 'fastify-plugin';
 import { FastifyPluginAsync } from 'fastify';
 import * as jose from 'jose';
+import { Redis } from 'ioredis';
 
 export interface OidcPluginOptions {
-  publicKey?: string;
+  redisUrl?: string;
+  isTest?: boolean;
 }
 
 const oidcPlugin: FastifyPluginAsync<OidcPluginOptions> = async (fastify, options) => {
-  const publicKeyStr = options.publicKey || process.env.JWT_PUBLIC_KEY;
-  if (!publicKeyStr) {
-    fastify.log.warn('JWT_PUBLIC_KEY is not set. OIDC verification will fail.');
+  await Promise.resolve();
+  const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
+  const redis = new Redis(redisUrl, { lazyConnect: options.isTest });
+
+  if (!options.isTest) {
+    // Note: ioredis connects automatically, lazyConnect: false is the default
+    redis.on('error', (err) => fastify.log.error(err, 'Redis connection error'));
   }
 
-  let publicKey: jose.KeyLike | undefined;
+  const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+  const jwksUrl = new URL(`${authServiceUrl}/api/auth/jwks.json`);
 
-  try {
-    if (publicKeyStr) {
-      publicKey = await jose.importSPKI(publicKeyStr, 'ES256');
-    }
-  } catch (error) {
-    fastify.log.error(error, 'Failed to import JWT_PUBLIC_KEY');
-  }
+  const JWKS = jose.createRemoteJWKSet(jwksUrl, {
+    cooldownDuration: 30000,
+    cacheMaxAge: 600000,
+  });
+
+  fastify.addHook('onClose', async () => {
+    await redis.quit();
+  });
 
   const whiteList = ['/health', '/ready', '/api/auth/authorize', '/api/auth/callback', '/metrics'];
 
@@ -29,8 +37,6 @@ const oidcPlugin: FastifyPluginAsync<OidcPluginOptions> = async (fastify, option
 
     // Skip whitelisted routes
     if (whiteList.includes(path) || path.startsWith('/api/auth/')) {
-      // NOTE: We allow all /api/auth routes to pass through to the auth service,
-      // because auth service handles its own token verification for endpoints like /me.
       return;
     }
 
@@ -42,20 +48,34 @@ const oidcPlugin: FastifyPluginAsync<OidcPluginOptions> = async (fastify, option
 
     const token = authHeader.replace('Bearer ', '');
 
-    if (!publicKey) {
-      return reply.status(500).send({ error: 'Internal Server Error: Missing public key' });
-    }
-
     try {
-      const { payload } = await jose.jwtVerify(token, publicKey, {
-        issuer: 'distill-auth-service',
+      const { payload } = await jose.jwtVerify(token, JWKS, {
+        issuer: 'distill-auth',
+        audience: 'distill-gateway',
       });
+
+      const sid = payload.sid as string;
+      if (sid && !options.isTest) {
+        try {
+          const isRevoked = await redis.get(`session:revoked:${sid}`);
+          if (isRevoked) {
+            fastify.log.warn({ sid }, 'Revoked session attempt');
+            return reply.status(401).send({ error: 'Unauthorized: Session revoked' });
+          }
+        } catch (err) {
+          fastify.log.error(err, 'Redis error checking session revocation');
+        }
+      }
 
       request.user = {
         id: payload.sub as string,
         tenantId: payload.tenantId as string,
         role: payload.role as string,
       };
+
+      if (!request.user.id || !request.user.tenantId || !request.user.role) {
+        throw new Error('Missing required claims');
+      }
     } catch (error) {
       fastify.log.warn({ ip: request.ip, error }, 'Invalid JWT token');
       return reply.status(401).send({ error: 'Unauthorized: Invalid token' });

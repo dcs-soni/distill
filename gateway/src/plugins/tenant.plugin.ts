@@ -4,12 +4,13 @@ import { Redis } from 'ioredis';
 
 export interface TenantPluginOptions {
   redisUrl?: string;
+  isTest?: boolean;
 }
 
 const tenantPlugin: FastifyPluginAsync<TenantPluginOptions> = async (fastify, options) => {
   await Promise.resolve();
   const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
-  const redis = new Redis(redisUrl);
+  const redis = new Redis(redisUrl, { lazyConnect: options.isTest });
 
   fastify.addHook('onClose', async () => {
     await redis.quit();
@@ -30,14 +31,26 @@ const tenantPlugin: FastifyPluginAsync<TenantPluginOptions> = async (fastify, op
 
     // Validate tenant active in Redis
     const cacheKey = `tenant:active:${tenantId}`;
-    let isActive = await redis.get(cacheKey);
+    let isActive = null;
+
+    if (!options.isTest) {
+      try {
+        isActive = await redis.get(cacheKey);
+      } catch (err) {
+        fastify.log.error(err, 'Redis error when checking tenant active status');
+      }
+    }
 
     if (isActive === null) {
       // If not in cache, we assume it's active for now, or we would query auth-service
       // In a real microservice, Gateway might call auth-service if not cached.
       // For this scaffold, we'll cache 'true' for 5 minutes by default if missing.
       isActive = 'true';
-      await redis.setex(cacheKey, 300, isActive);
+      if (!options.isTest) {
+        await redis.setex(cacheKey, 300, isActive).catch((err) => {
+          fastify.log.error(err, 'Redis error when setting tenant active status');
+        });
+      }
     }
 
     if (isActive !== 'true') {

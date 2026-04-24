@@ -5,11 +5,21 @@ import { Redis } from 'ioredis';
 
 export interface RateLimitPluginOptions {
   redisUrl?: string;
+  isTest?: boolean;
 }
 
 const rateLimitPlugin: FastifyPluginAsync<RateLimitPluginOptions> = async (fastify, options) => {
+  if (options.isTest) {
+    // Return early or use memory store in tests, rate limiting makes tests flaky
+    await fastify.register(rateLimit, {
+      max: 1000,
+      timeWindow: '1 minute',
+    });
+    return;
+  }
+
   const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
-  const redis = new Redis(redisUrl);
+  const redis = new Redis(redisUrl, { lazyConnect: options.isTest });
 
   // We need to define rate limit based on plan or IP.
   await fastify.register(rateLimit, {

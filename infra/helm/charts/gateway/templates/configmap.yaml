@@ -15,5 +15,3 @@ data:
   REVIEW_SERVICE_URL: {{ .Values.env.REVIEW_SERVICE_URL | quote }}
   ANALYTICS_SERVICE_URL: {{ .Values.env.ANALYTICS_SERVICE_URL | quote }}
   NOTIFICATION_SERVICE_URL: {{ .Values.env.NOTIFICATION_SERVICE_URL | quote }}
-  # In a real environment, JWT_PUBLIC_KEY would be loaded from a Secret
-  JWT_PUBLIC_KEY: {{ .Values.env.JWT_PUBLIC_KEY | quote }}

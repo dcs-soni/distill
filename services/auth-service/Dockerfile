@@ -26,6 +26,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared/types /app/shared/types
 COPY --from=builder /app/shared/utils /app/shared/utils
 COPY --from=builder /app/services/auth-service/dist ./services/auth-service/dist
+COPY --from=builder /app/services/auth-service/src/infrastructure/persistence/generated ./services/auth-service/dist/infrastructure/persistence/generated
 COPY --from=builder /app/services/auth-service/package.json ./services/auth-service/
 
 EXPOSE 3001

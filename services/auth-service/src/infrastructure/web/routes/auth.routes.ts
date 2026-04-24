@@ -96,4 +96,6 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   route.get('/me', { preHandler: requireAuth }, (request, reply) => controller.me(request, reply));
+
+  route.get('/jwks.json', (request, reply) => controller.jwks(request, reply));
 };

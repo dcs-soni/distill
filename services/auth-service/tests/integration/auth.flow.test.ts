@@ -19,12 +19,12 @@ describe('Auth Flow Integration', () => {
       accessToken: 'acc',
       idToken: 'id',
       refreshToken: 'ref',
-      expiresIn: 3600,
-    }),
-    verifyIdToken: async () => ({
-      sub: 'subject-123',
-      email: 'flow@example.com',
-      name: 'Flow User',
+      userInfo: {
+        sub: 'subject-123',
+        email: 'flow@example.com',
+        name: 'Flow User',
+        issuer: 'https://test-issuer.com',
+      },
     }),
     getUserInfo: async () => ({ sub: 'subject-123', name: 'Flow User', email: 'flow@example.com' }),
     refreshAccessToken: async () => ({ accessToken: 'acc', idToken: 'id', expiresIn: 3600 }),

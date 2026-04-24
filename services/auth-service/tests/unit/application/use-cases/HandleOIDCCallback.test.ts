@@ -36,7 +36,6 @@ describe('HandleOIDCCallback', () => {
       discoverProvider: vi.fn(),
       getAuthorizationUrl: vi.fn(),
       exchangeCodeForTokens: vi.fn(),
-      verifyIdToken: vi.fn(),
       getUserInfo: vi.fn(),
       refreshAccessToken: vi.fn(),
     };
@@ -75,12 +74,12 @@ describe('HandleOIDCCallback', () => {
       accessToken: 'access',
       idToken: 'id',
       refreshToken: 'refresh',
-    });
-
-    mockOidcProvider.verifyIdToken.mockResolvedValue({
-      sub: 'sub123',
-      email: 'test@example.com',
-      name: 'Test User',
+      userInfo: {
+        sub: 'sub123',
+        email: 'test@example.com',
+        name: 'Test User',
+        issuer: 'https://issuer.com',
+      },
     });
 
     const mockUser = {
@@ -128,12 +127,12 @@ describe('HandleOIDCCallback', () => {
       accessToken: 'access',
       idToken: 'id',
       refreshToken: 'refresh',
-    });
-
-    mockOidcProvider.verifyIdToken.mockResolvedValue({
-      sub: 'sub123',
-      email: 'test@example.com',
-      name: 'Test User',
+      userInfo: {
+        sub: 'sub123',
+        email: 'test@example.com',
+        name: 'Test User',
+        issuer: 'https://issuer.com',
+      },
     });
 
     const mockUser = {

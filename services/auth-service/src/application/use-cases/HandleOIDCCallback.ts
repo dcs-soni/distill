@@ -19,13 +19,13 @@ export class HandleOIDCCallback {
       throw new UnauthorizedError('Invalid or expired state parameter');
     }
 
-    const { idToken } = await this.oidcProvider.exchangeCodeForTokens(
+    const { userInfo } = await this.oidcProvider.exchangeCodeForTokens(
       code,
+      state,
+      authContext.nonce,
       authContext.codeVerifier,
       authContext.redirectUri
     );
-
-    const userInfo = await this.oidcProvider.verifyIdToken(idToken, authContext.nonce);
 
     if (!userInfo.email) {
       throw new UnauthorizedError('OIDC provider did not return an email');
@@ -33,7 +33,7 @@ export class HandleOIDCCallback {
 
     const user = await this.authRepository.upsertOIDCUser({
       oidcSubject: userInfo.sub,
-      oidcIssuer: 'default',
+      oidcIssuer: userInfo.issuer,
       email: userInfo.email,
       name: userInfo.name ?? '',
       lastLoginAt: new Date(),

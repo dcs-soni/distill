@@ -1,4 +1,4 @@
-import { Issuer, Client, TokenSet } from 'openid-client';
+import { Issuer, Client } from 'openid-client';
 import { ExternalServiceError, UnauthorizedError, logger } from '@distill/utils';
 import type { OIDCProviderPort } from '../../application/ports/OIDCProvider.port.js';
 
@@ -48,51 +48,44 @@ export class OIDCAdapter implements OIDCProviderPort {
     });
   }
 
-  async exchangeCodeForTokens(code: string, codeVerifier: string, redirectUri: string) {
-    if (!this.client) throw new Error('OIDC client not initialized');
+  async exchangeCodeForTokens(
+    code: string,
+    state: string,
+    nonce: string,
+    codeVerifier: string,
+    redirectUri: string
+  ) {
+    if (!this.client || !this.issuer) throw new Error('OIDC client not initialized');
 
     try {
+      // client.callback will automatically verify signature, issuer, audience, expiry, and nonce
       const tokenSet = await this.client.callback(
         redirectUri,
-        { code },
-        { code_verifier: codeVerifier }
+        { code, state },
+        { code_verifier: codeVerifier, state, nonce }
       );
 
       if (!tokenSet.id_token || !tokenSet.access_token) {
         throw new UnauthorizedError('Tokens not provided in OIDC callback response');
       }
 
+      const claims = tokenSet.claims();
+
       return {
         idToken: tokenSet.id_token,
         accessToken: tokenSet.access_token,
         refreshToken: tokenSet.refresh_token,
+        userInfo: {
+          sub: claims.sub,
+          issuer: String(this.issuer.issuer),
+          // openid-client types claims as unknown; explicitly coerce to string|undefined
+          email: typeof claims.email === 'string' ? claims.email : undefined,
+          name: typeof claims.name === 'string' ? claims.name : undefined,
+        },
       };
     } catch (error) {
       logger.error(toError(error), 'Error exchanging code to token');
-      throw new UnauthorizedError('Failed to exchange auth code', error);
-    }
-  }
-
-  verifyIdToken(idToken: string, nonce: string) {
-    if (!this.client) throw new Error('OIDC client not initialized');
-
-    try {
-      const tokenSet = new TokenSet({ id_token: idToken });
-      const claims = tokenSet.claims();
-
-      if (claims.nonce !== nonce) {
-        throw new UnauthorizedError('Nonce mismatch in ID token');
-      }
-
-      return Promise.resolve({
-        sub: claims.sub,
-        issuer: claims.iss,
-        email: claims.email,
-        name: claims.name,
-      });
-    } catch (error) {
-      logger.error(toError(error), 'Error verifying ID Token');
-      throw new UnauthorizedError('Invalid ID Token', error);
+      throw new UnauthorizedError('Failed to exchange auth code or validate ID token', error);
     }
   }
 

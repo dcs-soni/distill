@@ -8,21 +8,20 @@ export interface OIDCProviderPort {
   ): string;
   exchangeCodeForTokens(
     code: string,
+    state: string,
+    nonce: string,
     codeVerifier: string,
     redirectUri: string
   ): Promise<{
     idToken: string;
     accessToken: string;
     refreshToken?: string;
-  }>;
-  verifyIdToken(
-    idToken: string,
-    nonce: string
-  ): Promise<{
-    sub: string;
-    issuer?: string;
-    email?: string;
-    name?: string;
+    userInfo: {
+      sub: string;
+      issuer: string;
+      email?: string;
+      name?: string;
+    };
   }>;
   getUserInfo(accessToken: string): Promise<Record<string, unknown>>;
   refreshAccessToken(refreshToken: string): Promise<{

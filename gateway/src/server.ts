@@ -101,10 +101,12 @@ export async function buildServer() {
     return await register.metrics();
   });
 
+  const isTest = process.env.NODE_ENV === 'test' || process.env.REDIS_URL === 'redis://mocked';
+
   // 3. Custom Plugins (Order matters!)
-  await server.register(import('./plugins/oidc.plugin.js'));
-  await server.register(import('./plugins/tenant.plugin.js'));
-  await server.register(import('./plugins/rateLimit.plugin.js'));
+  await server.register(import('./plugins/oidc.plugin.js'), { isTest });
+  await server.register(import('./plugins/tenant.plugin.js'), { isTest });
+  await server.register(import('./plugins/rateLimit.plugin.js'), { isTest });
 
   // 4. Proxy Routes
   await server.register(import('./routes/proxy.js'));

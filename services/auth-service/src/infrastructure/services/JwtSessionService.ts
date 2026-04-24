@@ -76,7 +76,7 @@ export class JwtSessionService implements SessionServicePort {
       role,
       sid: session.id,
     })
-      .setProtectedHeader({ alg: 'ES256' })
+      .setProtectedHeader({ alg: 'ES256', kid: 'distill-auth-key-1' })
       .setIssuedAt()
       .setExpirationTime(ACCESS_TOKEN_TTL)
       .setIssuer('distill-auth')
@@ -147,7 +147,9 @@ export class JwtSessionService implements SessionServicePort {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
-    const member = session.user.memberships.find((m) => m.tenantId === session.tenantId);
+    const member = session.user.memberships.find(
+      (m: { tenantId: string; role: string }) => m.tenantId === session.tenantId
+    );
     if (!member) {
       throw new UnauthorizedError('User is no longer a member of this tenant');
     }
@@ -155,5 +157,21 @@ export class JwtSessionService implements SessionServicePort {
     // Rotate refresh token - delete old, create new
     await this.revokeSession(session.id);
     return this.createSession(session.userId, session.tenantId, member.role);
+  }
+
+  static async getJwks() {
+    if (!this.initialized) await this.initKeys();
+    const { exportJWK } = await import('jose');
+    const jwk = await exportJWK(this.publicKey);
+    return {
+      keys: [
+        {
+          ...jwk,
+          kid: 'distill-auth-key-1',
+          use: 'sig',
+          alg: 'ES256',
+        },
+      ],
+    };
   }
 }

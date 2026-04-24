@@ -57,4 +57,10 @@ export class AuthController {
     const profile = await this.getUserProfile.execute(request.user.userId);
     return reply.send(profile);
   }
+
+  async jwks(request: FastifyRequest, reply: FastifyReply) {
+    const { JwtSessionService } = await import('../../services/JwtSessionService.js');
+    const jwks = await JwtSessionService.getJwks();
+    return reply.send(jwks);
+  }
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from './generated/client/index.js';
 import { logger } from '@distill/utils';
 
 type ExtendedPrismaClient = PrismaClient<
@@ -23,10 +23,10 @@ const prismaClientOptions: Prisma.PrismaClientOptions = {
 let prisma: ExtendedPrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient() as unknown as ExtendedPrismaClient;
+  prisma = new PrismaClient();
 } else {
   if (!global.prisma) {
-    global.prisma = new PrismaClient(prismaClientOptions) as unknown as ExtendedPrismaClient;
+    global.prisma = new PrismaClient(prismaClientOptions);
 
     global.prisma.$on('query', (e: Prisma.QueryEvent) => {
       logger.debug(`Query: ${e.query}`);

@@ -24,6 +24,7 @@ COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/shared/types /app/shared/types
 COPY --from=builder --chown=node:node /app/shared/utils /app/shared/utils
 COPY --from=builder --chown=node:node /app/services/document-service/dist ./services/document-service/dist
+COPY --from=builder --chown=node:node /app/services/document-service/src/infrastructure/persistence/generated ./services/document-service/dist/infrastructure/persistence/generated
 COPY --from=builder --chown=node:node /app/services/document-service/package.json ./services/document-service/
 COPY --from=builder --chown=node:node /app/services/document-service/src/infrastructure/persistence/prisma ./services/document-service/prisma
 

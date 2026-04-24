@@ -70,11 +70,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     (request, reply) => controller.authorize(request, reply)
   );
 
-  route.post<{ Body: OIDCCallbackDTO }>(
+  route.get<{ Querystring: OIDCCallbackDTO }>(
     '/callback',
     {
       schema: {
-        body: OIDCCallbackSchema,
+        querystring: OIDCCallbackSchema,
         response: { 200: AuthResponseSchema },
       },
     },

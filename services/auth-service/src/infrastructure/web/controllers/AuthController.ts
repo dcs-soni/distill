@@ -31,10 +31,10 @@ export class AuthController {
   }
 
   async callback(
-    request: FastifyRequest<{ Body: { code: string; state: string } }>,
+    request: FastifyRequest<{ Querystring: { code: string; state: string } }>,
     reply: FastifyReply
   ) {
-    const { code, state } = request.body;
+    const { code, state } = request.query;
     const result = await this.handleOidcCallback.execute(code, state);
     return reply.send(result);
   }

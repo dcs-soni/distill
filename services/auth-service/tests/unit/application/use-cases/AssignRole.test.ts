@@ -29,9 +29,29 @@ describe('AssignRole', () => {
     useCase = new AssignRole(mockAuthRepo);
   });
 
+  it('should throw ForbiddenError if actor is not an ADMIN', async () => {
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue(null);
+    await expect(useCase.execute('u1', 't1', 'm1', 'ADMIN')).rejects.toThrow('Requires ADMIN role');
+  });
+
   it('should throw NotFoundError if membership does not exist', async () => {
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue({
+      id: 'm_actor',
+      tenantId: 't1',
+      userId: 'u1',
+      role: 'ADMIN',
+      joinedAt: new Date(),
+      tenant: {
+        id: 't1',
+        name: 'T1',
+        slug: 't1',
+        plan: 'FREE',
+        isActive: true,
+        createdAt: new Date(),
+      },
+    });
     mockAuthRepo.findTenantMember.mockResolvedValue(null);
-    await expect(useCase.execute('t1', 'm1', 'ADMIN')).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute('u1', 't1', 'm1', 'ADMIN')).rejects.toThrow(NotFoundError);
     expect(mockAuthRepo.findTenantMember).toHaveBeenCalledWith('t1', 'm1');
   });
 
@@ -53,9 +73,25 @@ describe('AssignRole', () => {
       joinedAt: new Date(),
     });
 
-    const result = await useCase.execute('t1', memberId, 'ADMIN');
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue({
+      id: 'm_actor',
+      tenantId: 't1',
+      userId: 'u1',
+      role: 'ADMIN',
+      joinedAt: new Date(),
+      tenant: {
+        id: 't1',
+        name: 'T1',
+        slug: 't1',
+        plan: 'FREE',
+        isActive: true,
+        createdAt: new Date(),
+      },
+    });
+
+    const result = await useCase.execute('u1', 't1', memberId, 'ADMIN');
 
     expect(result.role).toBe('ADMIN');
-    expect(mockAuthRepo.updateTenantMemberRole).toHaveBeenCalledWith(memberId, 'ADMIN');
+    expect(mockAuthRepo.updateTenantMemberRole).toHaveBeenCalledWith('t1', memberId, 'ADMIN');
   });
 });

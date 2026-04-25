@@ -49,7 +49,8 @@ export class TenantController {
   }
 
   async listMembers(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    const result = await this.listTenantMembersUc.execute(request.params.id);
+    if (!request.user) throw new ForbiddenError('Unauthorized');
+    const result = await this.listTenantMembersUc.execute(request.user.userId, request.params.id);
     return reply.send(result);
   }
 
@@ -57,8 +58,9 @@ export class TenantController {
     request: FastifyRequest<{ Params: { id: string }; Body: { email: string; role: string } }>,
     reply: FastifyReply
   ) {
-    if (request.user?.role !== 'ADMIN') throw new ForbiddenError('Requires ADMIN role');
+    if (!request.user) throw new ForbiddenError('Unauthorized');
     const result = await this.inviteMemberUc.execute(
+      request.user.userId,
       request.params.id,
       request.body.email,
       request.body.role
@@ -70,8 +72,9 @@ export class TenantController {
     request: FastifyRequest<{ Params: { id: string; memberId: string }; Body: { role: string } }>,
     reply: FastifyReply
   ) {
-    if (request.user?.role !== 'ADMIN') throw new ForbiddenError('Requires ADMIN role');
+    if (!request.user) throw new ForbiddenError('Unauthorized');
     const result = await this.assignRoleUc.execute(
+      request.user.userId,
       request.params.id,
       request.params.memberId,
       request.body.role
@@ -83,8 +86,12 @@ export class TenantController {
     request: FastifyRequest<{ Params: { id: string; memberId: string } }>,
     reply: FastifyReply
   ) {
-    if (request.user?.role !== 'ADMIN') throw new ForbiddenError('Requires ADMIN role');
-    await this.removeTenantMemberUc.execute(request.params.id, request.params.memberId);
+    if (!request.user) throw new ForbiddenError('Unauthorized');
+    await this.removeTenantMemberUc.execute(
+      request.user.userId,
+      request.params.id,
+      request.params.memberId
+    );
     return reply.send({ success: true });
   }
 }

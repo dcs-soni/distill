@@ -37,10 +37,30 @@ describe('ListTenantMembers', () => {
         user: { name: 'A', email: 'a@a.com' },
       },
     ];
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue({
+      id: 'm_actor',
+      tenantId: 't1',
+      userId: 'u1',
+      role: 'VIEWER',
+      joinedAt: new Date(),
+      tenant: {
+        id: 't1',
+        name: 'T1',
+        slug: 't1',
+        plan: 'FREE',
+        isActive: true,
+        createdAt: new Date(),
+      },
+    });
     mockAuthRepo.listTenantMembers.mockResolvedValue(mockMembers);
 
-    const result = await useCase.execute('t1');
+    const result = await useCase.execute('u1', 't1');
     expect(result).toEqual(mockMembers);
     expect(mockAuthRepo.listTenantMembers).toHaveBeenCalledWith('t1');
+  });
+
+  it('should throw ForbiddenError if actor is not a member', async () => {
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue(null);
+    await expect(useCase.execute('u1', 't1')).rejects.toThrow('Requires membership');
   });
 });

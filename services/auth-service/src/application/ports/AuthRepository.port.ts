@@ -79,7 +79,11 @@ export interface AuthRepositoryPort {
   ): Promise<TenantMemberWithTenantRecord | null>;
   findTenantMember(tenantId: string, memberId: string): Promise<TenantMemberRecord | null>;
   createTenantMember(input: CreateTenantMemberInput): Promise<TenantMemberRecord>;
-  updateTenantMemberRole(memberId: string, role: string): Promise<TenantMemberRecord>;
+  updateTenantMemberRole(
+    tenantId: string,
+    memberId: string,
+    role: string
+  ): Promise<TenantMemberRecord>;
   listTenantMembers(tenantId: string): Promise<TenantMemberWithUserRecord[]>;
   deleteTenantMember(tenantId: string, memberId: string): Promise<boolean>;
 }

@@ -59,12 +59,17 @@ describe('Tenant Flow Integration', () => {
     expect(members[0].role).toBe('ADMIN');
 
     // 3. Invite User2
-    const membership = await inviteMember.execute(tenant.id, 'member@example.com', 'VIEWER');
+    const membership = await inviteMember.execute(
+      user1.id,
+      tenant.id,
+      'member@example.com',
+      'VIEWER'
+    );
     expect(membership.userId).toBe(user2.id);
     expect(membership.role).toBe('VIEWER');
 
     // 4. Update User2 role to REVIEWER
-    const updated = await assignRole.execute(tenant.id, membership.id, 'REVIEWER');
+    const updated = await assignRole.execute(user1.id, tenant.id, membership.id, 'REVIEWER');
     expect(updated.role).toBe('REVIEWER');
 
     // Verify final state

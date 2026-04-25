@@ -27,9 +27,31 @@ describe('InviteMember', () => {
     useCase = new InviteMember(mockAuthRepo);
   });
 
+  it('should throw ForbiddenError if actor is not an ADMIN', async () => {
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue(null);
+    await expect(useCase.execute('u1', 't1', 'test@example.com', 'VIEWER')).rejects.toThrow(
+      'Requires ADMIN role'
+    );
+  });
+
   it('should throw NotFoundError if user not found by email', async () => {
+    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue({
+      id: 'm_actor',
+      tenantId: 't1',
+      userId: 'u1',
+      role: 'ADMIN',
+      joinedAt: new Date(),
+      tenant: {
+        id: 't1',
+        name: 'T1',
+        slug: 't1',
+        plan: 'FREE',
+        isActive: true,
+        createdAt: new Date(),
+      },
+    });
     mockAuthRepo.findUserByEmail.mockResolvedValue(null);
-    await expect(useCase.execute('t1', 'test@example.com', 'VIEWER')).rejects.toThrow(
+    await expect(useCase.execute('u1', 't1', 'test@example.com', 'VIEWER')).rejects.toThrow(
       NotFoundError
     );
   });
@@ -51,23 +73,43 @@ describe('InviteMember', () => {
       avatarUrl: null,
     });
 
-    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue({
-      id: 'm1',
-      tenantId: 't1',
-      userId: 'u2',
-      role: 'VIEWER',
-      joinedAt: new Date(),
-      tenant: {
-        id: 't1',
-        name: 'Tenant 1',
-        slug: 't1',
-        plan: 'FREE',
-        isActive: true,
-        createdAt: new Date(),
-      },
+    mockAuthRepo.findTenantMembershipByUser.mockImplementation(async (tId, uId) => {
+      if (uId === 'u1')
+        return {
+          id: 'm_actor',
+          tenantId: 't1',
+          userId: 'u1',
+          role: 'ADMIN',
+          joinedAt: new Date(),
+          tenant: {
+            id: 't1',
+            name: 'T1',
+            slug: 't1',
+            plan: 'FREE',
+            isActive: true,
+            createdAt: new Date(),
+          },
+        };
+      if (uId === 'u2')
+        return {
+          id: 'm1',
+          tenantId: 't1',
+          userId: 'u2',
+          role: 'VIEWER',
+          joinedAt: new Date(),
+          tenant: {
+            id: 't1',
+            name: 'Tenant 1',
+            slug: 't1',
+            plan: 'FREE',
+            isActive: true,
+            createdAt: new Date(),
+          },
+        };
+      return null;
     });
 
-    await expect(useCase.execute('t1', 'test@example.com', 'VIEWER')).rejects.toThrow(
+    await expect(useCase.execute('u1', 't1', 'test@example.com', 'VIEWER')).rejects.toThrow(
       ConflictError
     );
   });
@@ -89,7 +131,25 @@ describe('InviteMember', () => {
       avatarUrl: null,
     });
 
-    mockAuthRepo.findTenantMembershipByUser.mockResolvedValue(null);
+    mockAuthRepo.findTenantMembershipByUser.mockImplementation(async (tId, uId) => {
+      if (uId === 'u1')
+        return {
+          id: 'm_actor',
+          tenantId: 't1',
+          userId: 'u1',
+          role: 'ADMIN',
+          joinedAt: new Date(),
+          tenant: {
+            id: 't1',
+            name: 'T1',
+            slug: 't1',
+            plan: 'FREE',
+            isActive: true,
+            createdAt: new Date(),
+          },
+        };
+      return null;
+    });
 
     mockAuthRepo.createTenantMember.mockResolvedValue({
       id: 'm1',
@@ -99,7 +159,7 @@ describe('InviteMember', () => {
       joinedAt: new Date(),
     });
 
-    const result = await useCase.execute('t1', 'test@example.com', 'VIEWER');
+    const result = await useCase.execute('u1', 't1', 'test@example.com', 'VIEWER');
 
     expect(result.id).toBe('m1');
     expect(mockAuthRepo.createTenantMember).toHaveBeenCalledWith({

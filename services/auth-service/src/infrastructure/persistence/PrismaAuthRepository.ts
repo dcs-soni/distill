@@ -195,7 +195,19 @@ export class PrismaAuthRepository implements AuthRepositoryPort {
     return toTenantMemberRecord(membership);
   }
 
-  async updateTenantMemberRole(memberId: string, role: string): Promise<TenantMemberRecord> {
+  async updateTenantMemberRole(
+    tenantId: string,
+    memberId: string,
+    role: string
+  ): Promise<TenantMemberRecord> {
+    const existing = await prismaClient.tenantMember.findFirst({
+      where: { id: memberId, tenantId },
+    });
+
+    if (!existing) {
+      throw new Error('Tenant member not found');
+    }
+
     const membership = await prismaClient.tenantMember.update({
       where: { id: memberId },
       data: { role },

@@ -6,7 +6,9 @@ import { AppError, logger } from '@distill/utils';
 
 import { PrismaDocumentRepository } from './infrastructure/persistence/PrismaDocumentRepository.js';
 import { S3StorageAdapter } from './infrastructure/storage/S3StorageAdapter.js';
+import { PrismaBatchRepository } from './infrastructure/persistence/PrismaBatchRepository.js';
 import { RabbitMQPublisher } from './infrastructure/messaging/RabbitMQPublisher.js';
+import { OutboxRelay } from './infrastructure/messaging/OutboxRelay.js';
 import { UploadDocument } from './application/use-cases/UploadDocument.js';
 import { UploadBatch } from './application/use-cases/UploadBatch.js';
 import {
@@ -16,6 +18,8 @@ import {
 } from './application/use-cases/QueryDocuments.js';
 import { DocumentController } from './infrastructure/web/controllers/DocumentController.js';
 import { documentRoutes } from './infrastructure/web/routes/document.routes.js';
+import { prisma } from './infrastructure/persistence/prismaClient.js';
+import type { EventPublisher } from './application/ports/EventPublisher.port.js';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
@@ -34,6 +38,7 @@ void server.register(multipart, {
 });
 
 const documentRepo = new PrismaDocumentRepository();
+const batchRepo = new PrismaBatchRepository();
 const storage = new S3StorageAdapter({
   endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
   region: process.env.S3_REGION || 'us-east-1',
@@ -44,18 +49,27 @@ const storage = new S3StorageAdapter({
 });
 
 let publisher: RabbitMQPublisher | null = null;
+let outboxRelay: OutboxRelay | null = null;
 
-const lazyPublisher = {
-  publish: async (...args: Parameters<RabbitMQPublisher['publish']>) => {
-    if (!publisher) return false;
-    return publisher.publish(...args);
+/**
+ * Lazy publisher proxy that delegates to the real RabbitMQ publisher when
+ * available. In development without RABBITMQ_URL, publish() throws so the
+ * caller's catch block fires and the outbox record stays PENDING (which is
+ * the correct behavior for the transactional outbox pattern).
+ */
+const lazyPublisher: EventPublisher = {
+  publish: async (exchange, routingKey, event) => {
+    if (!publisher) {
+      throw new Error('Event publisher is not available — outbox relay will handle delivery');
+    }
+    return publisher.publish(exchange, routingKey, event);
   },
   connect: async () => {},
   close: async () => {},
 };
 
 const uploadDocument = new UploadDocument(documentRepo, storage, lazyPublisher);
-const uploadBatch = new UploadBatch(documentRepo, storage, lazyPublisher);
+const uploadBatch = new UploadBatch(documentRepo, batchRepo, storage, lazyPublisher);
 const listDocuments = new ListDocuments(documentRepo);
 const getDocument = new GetDocument(documentRepo, storage);
 const deleteDocument = new DeleteDocument(documentRepo, storage);
@@ -108,8 +122,18 @@ const start = async () => {
     if (process.env.RABBITMQ_URL) {
       publisher = new RabbitMQPublisher(process.env.RABBITMQ_URL);
       await publisher.connect();
+
+      // Start the transactional outbox relay to pick up PENDING events.
+      // The relay guarantees at-least-once delivery even when inline publish fails.
+      outboxRelay = new OutboxRelay(prisma, publisher);
+      outboxRelay.start();
     } else {
-      logger.warn('RABBITMQ_URL not set, event publishing disabled');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('RABBITMQ_URL is required in production');
+      }
+      logger.warn(
+        'RABBITMQ_URL not set, event publishing disabled — outbox events will accumulate'
+      );
     }
 
     await server.listen({ port, host: '0.0.0.0' });
@@ -125,10 +149,21 @@ const start = async () => {
 
 const gracefulShutdown = async (signal: string) => {
   logger.info(`Received ${signal}. Shutting down gracefully...`);
+
+  // Stop the outbox relay first to prevent new publishes during shutdown
+  if (outboxRelay) {
+    outboxRelay.stop();
+  }
+
   await server.close();
+
   if (publisher) {
     await publisher.close();
   }
+
+  // Disconnect Prisma to release the PostgreSQL connection pool
+  await prisma.$disconnect();
+
   process.exit(0);
 };
 

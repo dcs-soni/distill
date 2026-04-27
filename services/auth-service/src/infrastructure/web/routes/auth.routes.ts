@@ -11,10 +11,14 @@ import {
   OIDCCallbackSchema,
   AuthResponseSchema,
   RefreshTokenSchema,
+  AuthorizeResponseSchema,
+  UserProfileResponseSchema,
+  LogoutResponseSchema,
+  JwksResponseSchema,
+  ErrorResponseSchema,
   type OIDCCallbackDTO,
   type RefreshTokenDTO,
 } from '../../../application/dto/auth.dto.js';
-import { z } from 'zod';
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   const oidcAdapter = new OIDCAdapter(
@@ -63,7 +67,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: z.object({ url: z.string() }),
+          200: AuthorizeResponseSchema,
         },
       },
     },
@@ -75,7 +79,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         querystring: OIDCCallbackSchema,
-        response: { 200: AuthResponseSchema },
+        response: {
+          200: AuthResponseSchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.callback(request, reply)
@@ -86,16 +94,53 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         body: RefreshTokenSchema,
+        response: {
+          200: AuthResponseSchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.refresh(request, reply)
   );
 
-  route.post('/logout', { preHandler: requireAuth }, (request, reply) =>
-    controller.logout(request, reply)
+  route.post(
+    '/logout',
+    {
+      preHandler: requireAuth,
+      schema: {
+        response: {
+          200: LogoutResponseSchema,
+          401: ErrorResponseSchema,
+        },
+      },
+    },
+    (request, reply) => controller.logout(request, reply)
   );
 
-  route.get('/me', { preHandler: requireAuth }, (request, reply) => controller.me(request, reply));
+  route.get(
+    '/me',
+    {
+      preHandler: requireAuth,
+      schema: {
+        response: {
+          200: UserProfileResponseSchema,
+          401: ErrorResponseSchema,
+        },
+      },
+    },
+    (request, reply) => controller.me(request, reply)
+  );
 
-  route.get('/jwks.json', (request, reply) => controller.jwks(request, reply));
+  route.get(
+    '/jwks.json',
+    {
+      schema: {
+        response: {
+          200: JwksResponseSchema,
+        },
+      },
+    },
+    (request, reply) => controller.jwks(request, reply)
+  );
 };

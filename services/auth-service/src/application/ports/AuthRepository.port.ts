@@ -64,10 +64,16 @@ export interface CreateTenantMemberInput {
   role: string;
 }
 
+export interface UpdateTenantInput {
+  name?: string;
+  slug?: string;
+}
+
 export interface AuthRepositoryPort {
   findTenantById(tenantId: string): Promise<TenantRecord | null>;
   findTenantBySlug(slug: string): Promise<TenantRecord | null>;
   createTenantWithAdminMember(input: CreateTenantWithAdminInput): Promise<TenantRecord>;
+  updateTenant(tenantId: string, input: UpdateTenantInput): Promise<TenantRecord>;
   listUserTenants(userId: string): Promise<TenantRecord[]>;
   getUserProfile(userId: string): Promise<UserProfileRecord | null>;
   upsertOIDCUser(input: UpsertOIDCUserInput): Promise<AuthUserRecord>;

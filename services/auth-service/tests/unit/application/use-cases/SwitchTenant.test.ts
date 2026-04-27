@@ -25,6 +25,7 @@ describe('SwitchTenant', () => {
       updateTenantMemberRole: vi.fn(),
       listTenantMembers: vi.fn(),
       deleteTenantMember: vi.fn(),
+      updateTenant: vi.fn(),
     };
     mockSessionService = {
       createSession: vi.fn(),

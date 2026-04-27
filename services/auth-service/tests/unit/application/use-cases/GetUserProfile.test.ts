@@ -23,6 +23,7 @@ describe('GetUserProfile', () => {
       updateTenantMemberRole: vi.fn(),
       listTenantMembers: vi.fn(),
       deleteTenantMember: vi.fn(),
+      updateTenant: vi.fn(),
     };
     useCase = new GetUserProfile(mockAuthRepo);
   });

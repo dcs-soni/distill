@@ -22,6 +22,7 @@ describe('ListUserTenants', () => {
       updateTenantMemberRole: vi.fn(),
       listTenantMembers: vi.fn(),
       deleteTenantMember: vi.fn(),
+      updateTenant: vi.fn(),
     };
     useCase = new ListUserTenants(mockAuthRepo);
   });

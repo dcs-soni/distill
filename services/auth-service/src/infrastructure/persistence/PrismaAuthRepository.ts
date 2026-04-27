@@ -7,6 +7,7 @@ import type {
   TenantMemberWithTenantRecord,
   TenantMemberWithUserRecord,
   TenantRecord,
+  UpdateTenantInput,
   UpsertOIDCUserInput,
   UserProfileRecord,
 } from '../../application/ports/AuthRepository.port.js';
@@ -77,6 +78,19 @@ export class PrismaAuthRepository implements AuthRepositoryPort {
           },
         },
       },
+    });
+
+    return toTenantRecord(tenant);
+  }
+
+  async updateTenant(tenantId: string, input: UpdateTenantInput): Promise<TenantRecord> {
+    const data: Record<string, string> = {};
+    if (input.name !== undefined) data.name = input.name;
+    if (input.slug !== undefined) data.slug = input.slug;
+
+    const tenant = await prismaClient.tenant.update({
+      where: { id: tenantId },
+      data,
     });
 
     return toTenantRecord(tenant);

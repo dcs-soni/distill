@@ -43,6 +43,7 @@ function createMockRepo(): DocumentRepository {
     updateStatus: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
     countByTenantAndStatus: vi.fn().mockResolvedValue(0),
+    markOutboxEventPublished: vi.fn().mockResolvedValue(undefined),
   };
 }
 

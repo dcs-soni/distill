@@ -1,16 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/infrastructure/persistence/prismaClient.js', () => ({
-  prisma: {
-    batch: {
-      create: vi.fn().mockResolvedValue({}),
-      update: vi.fn().mockResolvedValue({}),
-    },
-  },
-}));
-
 import { UploadBatch } from '../../../src/application/use-cases/UploadBatch.js';
 import type { DocumentRepository } from '../../../src/application/ports/DocumentRepository.port.js';
+import type { BatchRepository } from '../../../src/application/ports/BatchRepository.port.js';
 import type { ObjectStorage } from '../../../src/application/ports/ObjectStorage.port.js';
 import type { EventPublisher } from '../../../src/application/ports/EventPublisher.port.js';
 
@@ -25,6 +17,7 @@ function createMockRepo(): DocumentRepository {
     updateStatus: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
     countByTenantAndStatus: vi.fn().mockResolvedValue(0),
+    markOutboxEventPublished: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -57,6 +50,7 @@ function createFileEntry(name = 'report.pdf') {
 
 describe('UploadBatch Use Case', () => {
   let repo: DocumentRepository;
+  let batchRepo: BatchRepository;
   let storage: ObjectStorage;
   let publisher: EventPublisher;
   let useCase: UploadBatch;
@@ -64,9 +58,13 @@ describe('UploadBatch Use Case', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = createMockRepo();
+    batchRepo = {
+      save: vi.fn().mockResolvedValue(undefined),
+      findById: vi.fn().mockResolvedValue(null),
+    };
     storage = createMockStorage();
     publisher = createMockPublisher();
-    useCase = new UploadBatch(repo, storage, publisher);
+    useCase = new UploadBatch(repo, batchRepo, storage, publisher);
   });
 
   it('successfully processes a batch of valid files', async () => {

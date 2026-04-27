@@ -6,6 +6,7 @@ export const UploadDocumentDto = z.object({
   fileName: z.string().min(1).max(255),
   mimeType: z.string(),
   fileSize: z.number().int().positive(),
+  batchId: z.string().optional(),
 });
 
 export type UploadDocumentInput = z.infer<typeof UploadDocumentDto>;

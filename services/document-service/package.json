@@ -20,14 +20,15 @@
     "prelint": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma"
   },
   "dependencies": {
-    "@distill/types": "*",
-    "@distill/utils": "*",
     "@aws-sdk/client-s3": "^3.750.0",
     "@aws-sdk/s3-request-presigner": "^3.750.0",
+    "@distill/types": "*",
+    "@distill/utils": "*",
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^9.0.3",
     "@prisma/client": "^5.12.1",
+    "adm-zip": "^0.5.17",
     "amqplib": "^0.10.3",
     "fastify": "^5.8.5",
     "fastify-plugin": "^5.1.0",
@@ -37,6 +38,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/amqplib": "^0.10.5",
     "@types/node": "^20.12.7",
     "@vitest/coverage-v8": "^1.6.1",

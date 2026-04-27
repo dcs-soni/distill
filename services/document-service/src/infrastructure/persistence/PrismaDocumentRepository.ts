@@ -1,6 +1,7 @@
 import type {
   DocumentRepository,
   DocumentFilter,
+  OutboxEventInput,
   PaginationOptions,
   PaginatedResult,
 } from '../../application/ports/DocumentRepository.port.js';
@@ -8,6 +9,7 @@ import { Document } from '../../domain/entities/Document.js';
 import { DocumentStatus } from '../../domain/value-objects/DocumentStatus.js';
 import { FileName, FileSize, MimeType } from '../../domain/value-objects/FileProperties.js';
 import { prisma } from './prismaClient.js';
+import type { Prisma } from './generated/client/index.js';
 
 type PrismaDocument = {
   id: string;
@@ -50,8 +52,8 @@ function toDomain(row: PrismaDocument): Document {
 }
 
 export class PrismaDocumentRepository implements DocumentRepository {
-  async save(document: Document): Promise<void> {
-    await prisma.document.upsert({
+  async save(document: Document, outboxEvent?: OutboxEventInput): Promise<void> {
+    const documentOps: Prisma.DocumentUpsertArgs = {
       where: { id: document.id },
       create: {
         id: document.id,
@@ -76,8 +78,27 @@ export class PrismaDocumentRepository implements DocumentRepository {
         isScanned: document.isScanned ?? null,
         retryCount: document.retryCount,
         errorMessage: document.errorMessage ?? null,
+        batchId: document.batchId ?? null,
       },
-    });
+    };
+
+    if (outboxEvent) {
+      await prisma.$transaction([
+        prisma.document.upsert(documentOps),
+        prisma.outboxEvent.create({
+          data: {
+            id: outboxEvent.id,
+            type: outboxEvent.type,
+            exchange: outboxEvent.exchange,
+            routingKey: outboxEvent.routingKey,
+            payload: outboxEvent.payload as Prisma.InputJsonValue,
+            status: 'PENDING',
+          },
+        }),
+      ]);
+    } else {
+      await prisma.document.upsert(documentOps);
+    }
   }
 
   async findById(tenantId: string, id: string): Promise<Document | null> {
@@ -156,6 +177,13 @@ export class PrismaDocumentRepository implements DocumentRepository {
   async countByTenantAndStatus(tenantId: string, status: string): Promise<number> {
     return prisma.document.count({
       where: { tenantId, status },
+    });
+  }
+
+  async markOutboxEventPublished(id: string): Promise<void> {
+    await prisma.outboxEvent.update({
+      where: { id },
+      data: { status: 'PUBLISHED' },
     });
   }
 }

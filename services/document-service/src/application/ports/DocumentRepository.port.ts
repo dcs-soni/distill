@@ -24,8 +24,16 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+export interface OutboxEventInput {
+  id: string;
+  type: string;
+  exchange: string;
+  routingKey: string;
+  payload: Record<string, unknown>;
+}
+
 export interface DocumentRepository {
-  save(document: Document): Promise<void>;
+  save(document: Document, outboxEvent?: OutboxEventInput): Promise<void>;
   findById(tenantId: string, id: string): Promise<Document | null>;
   findByS3Key(s3Key: string): Promise<Document | null>;
   findAll(
@@ -41,4 +49,5 @@ export interface DocumentRepository {
   ): Promise<void>;
   delete(tenantId: string, id: string): Promise<void>;
   countByTenantAndStatus(tenantId: string, status: string): Promise<number>;
+  markOutboxEventPublished(id: string): Promise<void>;
 }

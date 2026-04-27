@@ -1,7 +1,8 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { AppError, logger } from '@distill/utils';
 
 import { PrismaDocumentRepository } from './infrastructure/persistence/PrismaDocumentRepository.js';
@@ -27,6 +28,9 @@ const server = Fastify({
   logger: false,
   bodyLimit: MAX_FILE_SIZE + 1024,
 });
+
+server.setValidatorCompiler(validatorCompiler);
+server.setSerializerCompiler(serializerCompiler);
 
 void server.register(cors);
 void server.register(helmet);
@@ -84,7 +88,15 @@ const controller = new DocumentController(
 
 void server.register(documentRoutes(controller), { prefix: '/documents' });
 
-server.setErrorHandler((error, _request, reply) => {
+server.setErrorHandler((error: FastifyError & { statusCode?: number }, _request, reply) => {
+  if (error.validation) {
+    return reply.status(400).send({
+      error: 'VALIDATION_ERROR',
+      message: 'Request validation failed',
+      details: error.validation,
+    });
+  }
+
   if (error instanceof AppError) {
     const response: { error: string; message: string; details?: unknown } = {
       error: error.code,

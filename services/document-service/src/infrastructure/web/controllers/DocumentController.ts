@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { ValidationError } from '@distill/utils';
+import { UnauthorizedError, ValidationError } from '@distill/utils';
 import { UploadDocument } from '../../../application/use-cases/UploadDocument.js';
 import { UploadBatch } from '../../../application/use-cases/UploadBatch.js';
 import {
@@ -7,6 +7,8 @@ import {
   GetDocument,
   DeleteDocument,
 } from '../../../application/use-cases/QueryDocuments.js';
+
+const PRESIGNED_URL_EXPIRY_SECONDS = 3600;
 
 export class DocumentController {
   constructor(
@@ -22,14 +24,12 @@ export class DocumentController {
     const userId = request.headers['x-user-id'] as string;
 
     if (!tenantId || !userId) {
-      return reply
-        .status(401)
-        .send({ error: 'UNAUTHORIZED', message: 'Missing tenant or user context' });
+      throw new UnauthorizedError('Missing tenant or user context');
     }
 
     const data = await request.file();
     if (!data) {
-      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'No file provided' });
+      throw new ValidationError('No file provided');
     }
 
     const chunks: Buffer[] = [];
@@ -44,28 +44,21 @@ export class DocumentController {
         .send({ error: 'PAYLOAD_TOO_LARGE', message: 'File exceeds maximum size of 50MB' });
     }
 
-    try {
-      const result = await this.uploadDocument.execute(
-        {
-          tenantId,
-          uploadedById: userId,
-          fileName: data.filename,
-          mimeType: data.mimetype,
-          fileSize: fileBuffer.length,
-        },
-        fileBuffer
-      );
+    const result = await this.uploadDocument.execute(
+      {
+        tenantId,
+        uploadedById: userId,
+        fileName: data.filename,
+        mimeType: data.mimetype,
+        fileSize: fileBuffer.length,
+      },
+      fileBuffer
+    );
 
-      return reply.status(202).send({
-        data: result,
-        message: 'Document queued for processing',
-      });
-    } catch (err) {
-      if (err instanceof ValidationError) {
-        return reply.status(400).send({ error: 'VALIDATION_ERROR', message: err.message });
-      }
-      throw err;
-    }
+    return reply.status(202).send({
+      data: result,
+      message: 'Document queued for processing',
+    });
   }
 
   async handleBatchUpload(request: FastifyRequest, reply: FastifyReply) {
@@ -73,9 +66,7 @@ export class DocumentController {
     const userId = request.headers['x-user-id'] as string;
 
     if (!tenantId || !userId) {
-      return reply
-        .status(401)
-        .send({ error: 'UNAUTHORIZED', message: 'Missing tenant or user context' });
+      throw new UnauthorizedError('Missing tenant or user context');
     }
 
     const parts = request.files();
@@ -97,41 +88,45 @@ export class DocumentController {
     }
 
     if (files.length === 0) {
-      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'No files provided' });
+      throw new ValidationError('No files provided');
     }
 
-    const batchName =
-      (request.query as Record<string, string>).name || `Batch ${new Date().toISOString()}`;
+    const query = request.query as { name?: string };
+    const batchName = query.name || `Batch ${new Date().toISOString()}`;
 
-    try {
-      const result = await this.uploadBatch.execute(
-        { tenantId, uploadedById: userId, batchName },
-        files
-      );
+    const result = await this.uploadBatch.execute(
+      { tenantId, uploadedById: userId, batchName },
+      files
+    );
 
-      return reply.status(202).send({ data: result });
-    } catch (err) {
-      if (err instanceof ValidationError) {
-        return reply.status(400).send({ error: 'VALIDATION_ERROR', message: err.message });
-      }
-      throw err;
-    }
+    return reply.status(202).send({ data: result });
   }
 
   async handleList(request: FastifyRequest, reply: FastifyReply) {
     const tenantId = request.headers['x-tenant-id'] as string;
     if (!tenantId) {
-      return reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Missing tenant context' });
+      throw new UnauthorizedError('Missing tenant context');
     }
 
-    const query = request.query as Record<string, string>;
+    const query = request.query as {
+      page: number;
+      limit: number;
+      sortBy?: 'createdAt' | 'fileName' | 'status' | 'fileSize';
+      sortOrder?: 'asc' | 'desc';
+      status?: string;
+      documentType?: string;
+      batchId?: string;
+      search?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    };
 
     const result = await this.listDocuments.execute({
       tenantId,
-      page: query.page ? parseInt(query.page, 10) : 1,
-      limit: query.limit ? parseInt(query.limit, 10) : 20,
-      sortBy: query.sortBy as 'createdAt' | 'fileName' | 'status' | 'fileSize' | undefined,
-      sortOrder: query.sortOrder as 'asc' | 'desc' | undefined,
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
       status: query.status,
       documentType: query.documentType,
       batchId: query.batchId,
@@ -156,7 +151,7 @@ export class DocumentController {
     const { id } = request.params as { id: string };
 
     if (!tenantId) {
-      return reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Missing tenant context' });
+      throw new UnauthorizedError('Missing tenant context');
     }
 
     const result = await this.getDocument.execute({ tenantId, documentId: id });
@@ -169,7 +164,7 @@ export class DocumentController {
     const { id } = request.params as { id: string };
 
     if (!tenantId) {
-      return reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Missing tenant context' });
+      throw new UnauthorizedError('Missing tenant context');
     }
 
     await this.deleteDocument.execute(tenantId, id, userRole);
@@ -181,10 +176,14 @@ export class DocumentController {
     const { id } = request.params as { id: string };
 
     if (!tenantId) {
-      return reply.status(401).send({ error: 'UNAUTHORIZED', message: 'Missing tenant context' });
+      throw new UnauthorizedError('Missing tenant context');
     }
 
     const result = await this.getDocument.execute({ tenantId, documentId: id });
-    return reply.status(302).redirect(result.downloadUrl);
+
+    return reply.send({
+      url: result.downloadUrl,
+      expiresIn: PRESIGNED_URL_EXPIRY_SECONDS,
+    });
   }
 }

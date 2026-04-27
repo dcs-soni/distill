@@ -2,6 +2,8 @@ import type { FastifyPluginCallback } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { TenantController } from '../controllers/TenantController.js';
 import { CreateTenant } from '../../../application/use-cases/CreateTenant.js';
+import { GetTenant } from '../../../application/use-cases/GetTenant.js';
+import { UpdateTenant } from '../../../application/use-cases/UpdateTenant.js';
 import { InviteMember } from '../../../application/use-cases/InviteMember.js';
 import { AssignRole } from '../../../application/use-cases/AssignRole.js';
 import { ListTenantMembers } from '../../../application/use-cases/ListTenantMembers.js';
@@ -12,31 +14,31 @@ import { ListUserTenants } from '../../../application/use-cases/ListUserTenants.
 import { RemoveTenantMember } from '../../../application/use-cases/RemoveTenantMember.js';
 import {
   CreateTenantSchema,
+  UpdateTenantSchema,
   InviteMemberSchema,
   AssignRoleSchema,
   SwitchTenantSchema,
   TenantResponseSchema,
   TenantMemberResponseSchema,
+  TenantIdParamsSchema,
+  TenantMemberParamsSchema,
+  ErrorResponseSchema,
   type AssignRoleDTO,
   type CreateTenantDTO,
   type InviteMemberDTO,
   type SwitchTenantDTO,
+  type TenantIdParamsDTO,
+  type TenantMemberParamsDTO,
+  type UpdateTenantDTO,
 } from '../../../application/dto/tenant.dto.js';
 import { z } from 'zod';
-
-type TenantIdParams = {
-  id: string;
-};
-
-type TenantMemberParams = {
-  id: string;
-  memberId: string;
-};
 
 export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
   const sessionService = new JwtSessionService();
   const authRepository = new PrismaAuthRepository();
   const createTenantUc = new CreateTenant(authRepository);
+  const getTenantUc = new GetTenant(authRepository);
+  const updateTenantUc = new UpdateTenant(authRepository);
   const inviteMemberUc = new InviteMember(authRepository);
   const assignRoleUc = new AssignRole(authRepository);
   const listTenantMembersUc = new ListTenantMembers(authRepository);
@@ -46,6 +48,8 @@ export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
 
   const controller = new TenantController(
     createTenantUc,
+    getTenantUc,
+    updateTenantUc,
     inviteMemberUc,
     assignRoleUc,
     listTenantMembersUc,
@@ -63,7 +67,11 @@ export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
     {
       schema: {
         body: CreateTenantSchema,
-        response: { 200: TenantResponseSchema },
+        response: {
+          200: TenantResponseSchema,
+          400: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.createTenant(request, reply)
@@ -73,10 +81,46 @@ export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
     '/',
     {
       schema: {
-        response: { 200: z.array(TenantResponseSchema) },
+        response: {
+          200: z.array(TenantResponseSchema),
+          403: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.listTenants(request, reply)
+  );
+
+  route.get<{ Params: TenantIdParamsDTO }>(
+    '/:id',
+    {
+      schema: {
+        params: TenantIdParamsSchema,
+        response: {
+          200: TenantResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    (request, reply) => controller.getTenant(request, reply)
+  );
+
+  route.put<{ Params: TenantIdParamsDTO; Body: UpdateTenantDTO }>(
+    '/:id',
+    {
+      schema: {
+        params: TenantIdParamsSchema,
+        body: UpdateTenantSchema,
+        response: {
+          200: TenantResponseSchema,
+          400: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
+        },
+      },
+    },
+    (request, reply) => controller.updateTenant(request, reply)
   );
 
   route.post<{ Body: SwitchTenantDTO }>(
@@ -87,37 +131,67 @@ export const tenantRoutes: FastifyPluginCallback = (app, _opts, done) => {
     (request, reply) => controller.switchTenant(request, reply)
   );
 
-  route.get<{ Params: TenantIdParams }>(
+  route.get<{ Params: TenantIdParamsDTO }>(
     '/:id/members',
     {
       schema: {
-        params: z.object({ id: z.string() }),
-        response: { 200: z.array(TenantMemberResponseSchema) },
+        params: TenantIdParamsSchema,
+        response: {
+          200: z.array(TenantMemberResponseSchema),
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.listMembers(request, reply)
   );
 
-  route.post<{ Params: TenantIdParams; Body: InviteMemberDTO }>(
+  route.post<{ Params: TenantIdParamsDTO; Body: InviteMemberDTO }>(
     '/:id/members',
-    { schema: { body: InviteMemberSchema, params: z.object({ id: z.string() }) } },
+    {
+      schema: {
+        body: InviteMemberSchema,
+        params: TenantIdParamsSchema,
+        response: {
+          200: TenantMemberResponseSchema,
+          400: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
     (request, reply) => controller.inviteMember(request, reply)
   );
 
-  route.put<{ Params: TenantMemberParams; Body: AssignRoleDTO }>(
+  route.put<{ Params: TenantMemberParamsDTO; Body: AssignRoleDTO }>(
     '/:id/members/:memberId/role',
     {
       schema: {
         body: AssignRoleSchema,
-        params: z.object({ id: z.string(), memberId: z.string() }),
+        params: TenantMemberParamsSchema,
+        response: {
+          200: TenantMemberResponseSchema,
+          400: ErrorResponseSchema,
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
       },
     },
     (request, reply) => controller.assignRole(request, reply)
   );
 
-  route.delete<{ Params: TenantMemberParams }>(
+  route.delete<{ Params: TenantMemberParamsDTO }>(
     '/:id/members/:memberId',
-    { schema: { params: z.object({ id: z.string(), memberId: z.string() }) } },
+    {
+      schema: {
+        params: TenantMemberParamsSchema,
+        response: {
+          200: z.object({ success: z.boolean() }),
+          403: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
     (request, reply) => controller.removeMember(request, reply)
   );
 

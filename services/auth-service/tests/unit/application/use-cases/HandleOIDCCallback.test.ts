@@ -31,6 +31,7 @@ describe('HandleOIDCCallback', () => {
       updateTenantMemberRole: vi.fn(),
       listTenantMembers: vi.fn(),
       deleteTenantMember: vi.fn(),
+      updateTenant: vi.fn(),
     };
     mockOidcProvider = {
       discoverProvider: vi.fn(),

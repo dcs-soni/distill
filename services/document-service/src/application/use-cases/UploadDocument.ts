@@ -1,5 +1,6 @@
 import { generateId } from '@distill/utils';
-import { ValidationError } from '@distill/utils';
+import { ValidationError, logger } from '@distill/utils';
+import type { DomainEvent } from '@distill/types';
 import { Document } from '../../domain/entities/Document.js';
 import { DocumentStatus } from '../../domain/value-objects/DocumentStatus.js';
 import { FileName, FileSize, MimeType } from '../../domain/value-objects/FileProperties.js';
@@ -45,16 +46,10 @@ export class UploadDocument {
       status: new DocumentStatus('QUEUED'),
       uploadedById: input.uploadedById,
       retryCount: 0,
+      batchId: input.batchId,
       createdAt: now,
       updatedAt: now,
     });
-
-    try {
-      await this.documentRepo.save(document);
-    } catch (err) {
-      await this.storage.deleteFile(s3Key);
-      throw err;
-    }
 
     const event = createDocumentUploadedEvent(
       {
@@ -65,11 +60,39 @@ export class UploadDocument {
         mimeType: mimeType.value,
         fileSize: fileSize.value,
         uploadedById: input.uploadedById,
+        batchId: input.batchId,
       },
       documentId
     );
 
-    await this.publisher.publish('document.exchange', 'document.uploaded.pdf', event);
+    const outboxEventId = generateId();
+    const outboxEvent = {
+      id: outboxEventId,
+      type: event.eventType,
+      exchange: 'document.exchange',
+      routingKey: 'document.uploaded.pdf',
+      payload: event as unknown as Record<string, unknown>,
+    };
+
+    try {
+      await this.documentRepo.save(document, outboxEvent);
+    } catch (err) {
+      await this.storage.deleteFile(s3Key);
+      throw err;
+    }
+
+    try {
+      await this.publisher.publish(
+        outboxEvent.exchange,
+        outboxEvent.routingKey,
+        event as unknown as DomainEvent
+      );
+      await this.documentRepo.markOutboxEventPublished(outboxEventId);
+    } catch (err) {
+      // Publish failed; the transactional outbox record guarantees at-least-once delivery
+      // via the background relay. Log so ops can monitor relay lag.
+      logger.warn({ documentId, err }, 'Inline publish failed — outbox relay will retry');
+    }
 
     return document.toDTO();
   }

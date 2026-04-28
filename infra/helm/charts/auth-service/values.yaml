@@ -31,3 +31,6 @@ secrets:
   OIDC_ISSUER_URL: ""
   DATABASE_URL: ""
   JWT_PRIVATE_KEY: ""
+  JWT_PUBLIC_KEY: ""
+  OIDC_REDIRECT_URI: ""
+  REDIS_URL: ""

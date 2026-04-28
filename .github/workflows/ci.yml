@@ -67,6 +67,28 @@ jobs:
       - name: Type-check all workspaces
         run: npm run typecheck --workspaces --if-present
 
+  helm-checks:
+    name: Helm Lint & Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm Lint
+        run: |
+          helm lint infra/helm/charts/gateway --set secrets.JWT_PUBLIC_KEY=dummy
+          helm lint infra/helm/charts/auth-service --set secrets.OIDC_CLIENT_ID=dummy,secrets.OIDC_CLIENT_SECRET=dummy,secrets.OIDC_ISSUER_URL=dummy,secrets.DATABASE_URL=dummy,secrets.JWT_PRIVATE_KEY=dummy,secrets.JWT_PUBLIC_KEY=dummy,secrets.OIDC_REDIRECT_URI=dummy,secrets.REDIS_URL=dummy
+          helm lint infra/helm/charts/document-service --set secrets.DATABASE_URL=dummy,secrets.RABBITMQ_URL=dummy,secrets.S3_ENDPOINT=dummy,secrets.S3_ACCESS_KEY=dummy,secrets.S3_SECRET_KEY=dummy,secrets.S3_BUCKET=dummy
+
+      - name: Helm Template
+        run: |
+          helm template infra/helm/charts/gateway --set secrets.JWT_PUBLIC_KEY=dummy
+          helm template infra/helm/charts/auth-service --set secrets.OIDC_CLIENT_ID=dummy,secrets.OIDC_CLIENT_SECRET=dummy,secrets.OIDC_ISSUER_URL=dummy,secrets.DATABASE_URL=dummy,secrets.JWT_PRIVATE_KEY=dummy,secrets.JWT_PUBLIC_KEY=dummy,secrets.OIDC_REDIRECT_URI=dummy,secrets.REDIS_URL=dummy
+          helm template infra/helm/charts/document-service --set secrets.DATABASE_URL=dummy,secrets.RABBITMQ_URL=dummy,secrets.S3_ENDPOINT=dummy,secrets.S3_ACCESS_KEY=dummy,secrets.S3_SECRET_KEY=dummy,secrets.S3_BUCKET=dummy
+
   test-node:
     name: Unit Tests (Node.js)
     runs-on: ubuntu-latest
@@ -271,7 +293,7 @@ jobs:
   ci-gate:
     name: CI Gate
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test-node, test-python, security-audit, docker-build]
+    needs: [lint, typecheck, test-node, test-python, security-audit, docker-build, helm-checks]
     if: always()
     steps:
       - name: Check results
@@ -282,10 +304,12 @@ jobs:
           echo "Python Tests: ${{ needs.test-python.result }}"
           echo "Security Audit: ${{ needs.security-audit.result }}"
           echo "Docker Build: ${{ needs.docker-build.result }}"
+          echo "Helm Checks: ${{ needs.helm-checks.result }}"
 
           # Fail if any required job failed (exclude python + security as they may be skipped initially)
           if [[ "${{ needs.lint.result }}" == "failure" || \
                 "${{ needs.typecheck.result }}" == "failure" || \
+                "${{ needs.helm-checks.result }}" == "failure" || \
                 "${{ needs.test-node.result }}" == "failure" ]]; then
             echo "::error::Required CI checks failed"
             exit 1

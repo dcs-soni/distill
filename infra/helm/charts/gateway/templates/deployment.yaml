@@ -25,7 +25,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "gateway.fullname" . }}-config
-          # If using secrets for JWT key in production, add it here via env/secretKeyRef
+            - secretRef:
+                name: {{ include "gateway.fullname" . }}-secret
           livenessProbe:
             httpGet:
               path: /health

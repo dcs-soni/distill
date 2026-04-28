@@ -33,4 +33,4 @@ USER node
 EXPOSE 3002
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "services/document-service/dist/bootstrap.js"]
+CMD ["node", "services/document-service/dist/services/document-service/src/bootstrap.js"]

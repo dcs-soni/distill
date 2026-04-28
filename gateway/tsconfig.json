@@ -1,9 +1,8 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../dist/gateway",
-    "rootDir": "."
+    "outDir": "../dist/gateway"
   },
-  "include": ["src/**/*", "tests/**/*", "vitest.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "../dist"]
 }

@@ -79,15 +79,15 @@ jobs:
 
       - name: Helm Lint
         run: |
-          helm lint infra/helm/charts/gateway
-          helm lint infra/helm/charts/auth-service
-          helm lint infra/helm/charts/document-service
+          helm lint infra/helm/charts/gateway --set secrets.JWT_PUBLIC_KEY=dummy
+          helm lint infra/helm/charts/auth-service --set secrets.OIDC_CLIENT_ID=dummy,secrets.OIDC_CLIENT_SECRET=dummy,secrets.OIDC_ISSUER_URL=dummy,secrets.DATABASE_URL=dummy,secrets.JWT_PRIVATE_KEY=dummy,secrets.JWT_PUBLIC_KEY=dummy,secrets.OIDC_REDIRECT_URI=dummy,secrets.REDIS_URL=dummy
+          helm lint infra/helm/charts/document-service --set secrets.DATABASE_URL=dummy,secrets.RABBITMQ_URL=dummy,secrets.S3_ENDPOINT=dummy,secrets.S3_ACCESS_KEY=dummy,secrets.S3_SECRET_KEY=dummy,secrets.S3_BUCKET=dummy
 
       - name: Helm Template
         run: |
-          helm template infra/helm/charts/gateway
-          helm template infra/helm/charts/auth-service
-          helm template infra/helm/charts/document-service
+          helm template infra/helm/charts/gateway --set secrets.JWT_PUBLIC_KEY=dummy
+          helm template infra/helm/charts/auth-service --set secrets.OIDC_CLIENT_ID=dummy,secrets.OIDC_CLIENT_SECRET=dummy,secrets.OIDC_ISSUER_URL=dummy,secrets.DATABASE_URL=dummy,secrets.JWT_PRIVATE_KEY=dummy,secrets.JWT_PUBLIC_KEY=dummy,secrets.OIDC_REDIRECT_URI=dummy,secrets.REDIS_URL=dummy
+          helm template infra/helm/charts/document-service --set secrets.DATABASE_URL=dummy,secrets.RABBITMQ_URL=dummy,secrets.S3_ENDPOINT=dummy,secrets.S3_ACCESS_KEY=dummy,secrets.S3_SECRET_KEY=dummy,secrets.S3_BUCKET=dummy
 
   test-node:
     name: Unit Tests (Node.js)

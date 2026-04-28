@@ -9,12 +9,14 @@ export interface TenantPluginOptions {
 
 const tenantPlugin: FastifyPluginAsync<TenantPluginOptions> = async (fastify, options) => {
   await Promise.resolve();
-  const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
-  const redis = new Redis(redisUrl, { lazyConnect: options.isTest });
-
-  fastify.addHook('onClose', async () => {
-    await redis.quit();
-  });
+  let redis: Redis | null = null;
+  if (!options.isTest) {
+    const redisUrl = options.redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
+    redis = new Redis(redisUrl);
+    fastify.addHook('onClose', async () => {
+      await redis?.quit();
+    });
+  }
 
   fastify.addHook('preHandler', async (request, reply) => {
     // Strip incoming spoofed headers
@@ -29,11 +31,18 @@ const tenantPlugin: FastifyPluginAsync<TenantPluginOptions> = async (fastify, op
 
     const { tenantId, id: userId, role } = request.user;
 
+    if (options.isTest) {
+      request.headers['x-tenant-id'] = tenantId;
+      request.headers['x-user-id'] = userId;
+      request.headers['x-user-role'] = role;
+      return;
+    }
+
     // Validate tenant active in Redis
     const cacheKey = `tenant:active:${tenantId}`;
-    let isActive = null;
+    let isActive: string | null = null;
 
-    if (!options.isTest) {
+    if (redis) {
       try {
         isActive = await redis.get(cacheKey);
       } catch (err) {
@@ -42,14 +51,35 @@ const tenantPlugin: FastifyPluginAsync<TenantPluginOptions> = async (fastify, op
     }
 
     if (isActive === null) {
-      // If not in cache, we assume it's active for now, or we would query auth-service
-      // In a real microservice, Gateway might call auth-service if not cached.
-      // For this scaffold, we'll cache 'true' for 5 minutes by default if missing.
-      isActive = 'true';
-      if (!options.isTest) {
-        await redis.setex(cacheKey, 300, isActive).catch((err) => {
-          fastify.log.error(err, 'Redis error when setting tenant active status');
+      // Query auth-service for active status
+      try {
+        const authUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+        const res = await fetch(`${authUrl}/tenants/${tenantId}`, {
+          headers: {
+            'x-request-id': request.id,
+            authorization: request.headers.authorization || '',
+          },
         });
+
+        if (res.ok) {
+          const tenantData = (await res.json()) as { isActive?: boolean; plan?: string };
+          isActive = tenantData.isActive !== false ? 'true' : 'false';
+          const plan = tenantData.plan ? String(tenantData.plan) : 'FREE';
+
+          if (redis) {
+            await redis
+              .pipeline()
+              .setex(cacheKey, 300, isActive)
+              .setex(`tenant:plan:${tenantId}`, 300, plan)
+              .exec();
+          }
+        } else {
+          fastify.log.warn({ tenantId, status: res.status }, 'Auth service rejected tenant check');
+          isActive = 'false';
+        }
+      } catch (err) {
+        fastify.log.error(err, 'Failed to fetch tenant status from auth-service');
+        isActive = 'false'; // Fail closed
       }
     }
 

@@ -32,11 +32,25 @@ const rateLimitPlugin: FastifyPluginAsync<RateLimitPluginOptions> = async (fasti
       // Per-IP rate limiting for auth routes / unauthenticated
       return `ratelimit:ip:${request.ip}`;
     },
-    max: (request, key) => {
+    max: async (request, key) => {
       if (key.startsWith('ratelimit:tenant:')) {
-        // Default to PRO tier rate limits for scaffold (1000 req/min)
-        // In real app, we'd query the tenant's plan from Redis/Auth
-        return 1000;
+        const tenantId = key.split(':')[2];
+        let plan = 'FREE';
+        try {
+          plan = (await redis.get(`tenant:plan:${tenantId}`)) || 'FREE';
+        } catch (err) {
+          fastify.log.error(err, 'Redis error fetching tenant plan for rate limit');
+        }
+
+        switch (plan) {
+          case 'ENTERPRISE':
+            return 10000;
+          case 'PRO':
+            return 1000;
+          case 'FREE':
+          default:
+            return 100;
+        }
       }
       // Unauthenticated IP limit (20 req/min)
       return 20;

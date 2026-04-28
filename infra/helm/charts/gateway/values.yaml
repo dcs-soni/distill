@@ -25,7 +25,6 @@ resources:
 env:
   NODE_ENV: production
   PORT: 3000
-  JWT_PUBLIC_KEY: "" # Overridden via secrets
   REDIS_URL: "redis://distill-redis-master:6379"
   AUTH_SERVICE_URL: "http://auth-service:3001"
   DOCUMENT_SERVICE_URL: "http://document-service:3002"
@@ -34,3 +33,6 @@ env:
   REVIEW_SERVICE_URL: "http://review-service:3005"
   ANALYTICS_SERVICE_URL: "http://analytics-service:3006"
   NOTIFICATION_SERVICE_URL: "http://notification-service:3007"
+
+secrets:
+  JWT_PUBLIC_KEY: ""

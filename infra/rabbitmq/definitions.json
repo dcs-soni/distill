@@ -2,8 +2,28 @@
   "users": [
     {
       "name": "admin",
-      "password": "admin_password",
+      "password": "${RABBITMQ_ADMIN_PASS}",
       "tags": "administrator"
+    },
+    {
+      "name": "document_service",
+      "password": "${RMQ_DOC_PASS}",
+      "tags": ""
+    },
+    {
+      "name": "extraction_service",
+      "password": "${RMQ_EXT_PASS}",
+      "tags": ""
+    },
+    {
+      "name": "validation_service",
+      "password": "${RMQ_VAL_PASS}",
+      "tags": ""
+    },
+    {
+      "name": "review_service",
+      "password": "${RMQ_REV_PASS}",
+      "tags": ""
     }
   ],
   "vhosts": [
@@ -18,6 +38,34 @@
       "configure": ".*",
       "write": ".*",
       "read": ".*"
+    },
+    {
+      "user": "document_service",
+      "vhost": "distill",
+      "configure": "^(document\\.|extraction\\.document\\.|dlx\\.).*",
+      "write": "^(document\\.|dlx\\.).*",
+      "read": "^(document\\.|extraction\\.document\\.|dlx\\.).*"
+    },
+    {
+      "user": "extraction_service",
+      "vhost": "distill",
+      "configure": "^(extraction\\.|validation\\.extraction\\.|dlx\\.).*",
+      "write": "^(extraction\\.|dlx\\.).*",
+      "read": "^(extraction\\.|validation\\.extraction\\.|dlx\\.).*"
+    },
+    {
+      "user": "validation_service",
+      "vhost": "distill",
+      "configure": "^(validation\\.|review\\.validation\\.|dlx\\.).*",
+      "write": "^(validation\\.|dlx\\.).*",
+      "read": "^(validation\\.|review\\.validation\\.|dlx\\.).*"
+    },
+    {
+      "user": "review_service",
+      "vhost": "distill",
+      "configure": "^(review\\.|dlx\\.).*",
+      "write": "^(review\\.|dlx\\.).*",
+      "read": "^(review\\.|dlx\\.).*"
     }
   ],
   "parameters": [],
@@ -29,6 +77,15 @@
       "definition": {
         "ha-mode": "all",
         "ha-sync-mode": "automatic"
+      }
+    },
+    {
+      "vhost": "distill",
+      "name": "queue-limits",
+      "pattern": ".*",
+      "definition": {
+        "max-length": 10000,
+        "message-ttl": 86400000
       }
     }
   ],
@@ -72,7 +129,7 @@
     {
       "name": "dlx.exchange",
       "vhost": "distill",
-      "type": "direct",
+      "type": "topic",
       "durable": true,
       "auto_delete": false,
       "internal": false,

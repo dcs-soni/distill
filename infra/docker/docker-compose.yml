@@ -9,13 +9,27 @@ services:
       - '5672:5672'
       - '15672:15672'
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin_password
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_ADMIN_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_ADMIN_PASS}
       - RABBITMQ_DEFAULT_VHOST=distill
-      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/etc/rabbitmq/definitions.json"
+      - RMQ_DOC_PASS=${RMQ_DOC_PASS}
+      - RMQ_EXT_PASS=${RMQ_EXT_PASS}
+      - RMQ_VAL_PASS=${RMQ_VAL_PASS}
+      - RMQ_REV_PASS=${RMQ_REV_PASS}
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management load_definitions "/tmp/definitions.json"
+    command: >
+      sh -c '
+      apk add --no-cache sed &&
+      sed -e "s/\$${RMQ_DOC_PASS}/$$RMQ_DOC_PASS/g" \
+          -e "s/\$${RMQ_EXT_PASS}/$$RMQ_EXT_PASS/g" \
+          -e "s/\$${RMQ_VAL_PASS}/$$RMQ_VAL_PASS/g" \
+          -e "s/\$${RMQ_REV_PASS}/$$RMQ_REV_PASS/g" \
+          /etc/rabbitmq/definitions.template.json > /tmp/definitions.json &&
+      rabbitmq-server
+      '
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-      - ../rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ../rabbitmq/definitions.json:/etc/rabbitmq/definitions.template.json:ro
       - ../rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
@@ -35,7 +49,7 @@ services:
       - redis-data:/data
       - ../redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', 'redis_password', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -49,8 +63,8 @@ services:
       - '9000:9000'
       - '9001:9001'
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -70,7 +84,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set distill http://minio:9000 minioadmin minioadmin &&
+      /usr/bin/mc alias set distill http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
       /usr/bin/mc mb distill/distill-documents --ignore-existing &&
       /usr/bin/mc version enable distill/distill-documents
       "
@@ -86,14 +100,14 @@ services:
     ports:
       - '5432:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${AUTH_DB_USER}
+      - POSTGRES_PASSWORD=${AUTH_DB_PASS}
       - POSTGRES_DB=auth_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - pgdata-auth:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d auth_db']
+      test: ['CMD-SHELL', 'pg_isready -U ${AUTH_DB_USER} -d auth_db']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,14 +120,14 @@ services:
     ports:
       - '5433:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${DOCUMENT_DB_USER}
+      - POSTGRES_PASSWORD=${DOCUMENT_DB_PASS}
       - POSTGRES_DB=document_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - pgdata-document:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d document_db']
+      test: ['CMD-SHELL', 'pg_isready -U ${DOCUMENT_DB_USER} -d document_db']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -126,14 +140,14 @@ services:
     ports:
       - '5434:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${REVIEW_DB_USER}
+      - POSTGRES_PASSWORD=${REVIEW_DB_PASS}
       - POSTGRES_DB=review_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - pgdata-review:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d review_db']
+      test: ['CMD-SHELL', 'pg_isready -U ${REVIEW_DB_USER} -d review_db']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -146,14 +160,14 @@ services:
     ports:
       - '5435:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${EXTRACTION_DB_USER}
+      - POSTGRES_PASSWORD=${EXTRACTION_DB_PASS}
       - POSTGRES_DB=extraction_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - pgdata-extraction:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d extraction_db']
+      test: ['CMD-SHELL', 'pg_isready -U ${EXTRACTION_DB_USER} -d extraction_db']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -166,14 +180,14 @@ services:
     ports:
       - '5436:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${ANALYTICS_DB_USER}
+      - POSTGRES_PASSWORD=${ANALYTICS_DB_PASS}
       - POSTGRES_DB=analytics_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - pgdata-analytics:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d analytics_db']
+      test: ['CMD-SHELL', 'pg_isready -U ${ANALYTICS_DB_USER} -d analytics_db']
       interval: 10s
       timeout: 5s
       retries: 5

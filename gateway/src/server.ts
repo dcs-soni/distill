@@ -49,6 +49,8 @@ export const server = fastify({
 // Calculate request duration
 server.addHook('onRequest', (request, reply, done) => {
   request.startTime = performance.now();
+  request.headers['x-request-id'] = request.id;
+  void reply.header('x-request-id', request.id);
   done();
 });
 
@@ -80,6 +82,10 @@ export async function buildServer() {
   });
 
   // 2. CORS
+  if (process.env.NODE_ENV === 'production' && !process.env.CORS_ALLOWED_ORIGINS) {
+    throw new Error('CORS_ALLOWED_ORIGINS environment variable is required in production');
+  }
+
   await server.register(cors, {
     origin: process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

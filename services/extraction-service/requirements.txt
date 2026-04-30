@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
+alembic
+google-genai
+openai
+anthropic
+pdfplumber
+pymupdf
+pydantic
+structlog
+aio-pika
+prometheus-fastapi-instrumentator

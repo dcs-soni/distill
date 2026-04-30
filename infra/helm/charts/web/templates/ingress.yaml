@@ -1,0 +1,63 @@
+{{- if .Values.ingress.enabled -}}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "web.fullname" . }}-https-redirect
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "web.fullname" . }}-security-headers
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+spec:
+  headers:
+    frameDeny: true
+    sslRedirect: true
+    browserXssFilter: true
+    contentTypeNosniff: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 31536000
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "web.fullname" . }}-tls
+spec:
+  secretName: {{ .Values.ingress.tlsSecretName | default (printf "%s-tls" (include "web.fullname" .)) }}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ .Values.ingress.host }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "web.fullname" . }}
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.ingress.host }}`)
+      kind: Rule
+      middlewares:
+        - name: {{ include "web.fullname" . }}-https-redirect
+        - name: {{ include "web.fullname" . }}-security-headers
+      services:
+        - name: {{ include "web.fullname" . }}
+          port: {{ .Values.service.port }}
+  tls:
+    secretName: {{ .Values.ingress.tlsSecretName | default (printf "%s-tls" (include "web.fullname" .)) }}
+{{- end }}

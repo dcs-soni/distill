@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "distill-extraction-service"
+version = "1.0.0"
+description = "Financial data extraction using multi-agent AI pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "asyncpg",
+    "alembic",
+    "google-genai",
+    "openai",
+    "anthropic",
+    "pdfplumber",
+    "pymupdf",
+    "pydantic",
+    "structlog",
+    "aio-pika",
+    "prometheus-fastapi-instrumentator"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

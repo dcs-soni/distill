@@ -1,0 +1,30 @@
+replicaCount: 2
+
+image:
+  repository: distill/web
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  host: app.distill.example.com
+  tlsSecretName: distill-web-tls
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  NODE_ENV: production
+  VITE_API_URL: "https://api.distill.example.com/api"
+  VITE_WS_URL: "wss://api.distill.example.com/ws"
+
+secrets: {}

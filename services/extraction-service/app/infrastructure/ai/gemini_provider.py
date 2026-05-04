@@ -53,7 +53,7 @@ class GeminiProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type(APIError)
     )
-    async def classify_document(self, document_content: Any) -> ClassificationResult:
+    async def classify_document(self, document_content: Any, prompt: str = None) -> ClassificationResult:
         """Classify the document using Gemini Vision with structured JSON output."""
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -61,7 +61,7 @@ class GeminiProvider(AIProvider):
             temperature=0.1
         )
         
-        prompt = "Analyze the provided document and classify its type. Output exactly as the provided JSON schema."
+        prompt = prompt or "Analyze the provided document and classify its type. Output exactly as the provided JSON schema."
         contents = [prompt, document_content] if not isinstance(document_content, list) else [prompt] + document_content
 
         response = await self.client.aio.models.generate_content(

@@ -13,7 +13,7 @@ class AIProvider(ABC):
     """
     
     @abstractmethod
-    async def classify_document(self, document_content: Any) -> ClassificationResult:
+    async def classify_document(self, document_content: Any, prompt: str = None) -> ClassificationResult:
         """
         Classify the given document content.
         

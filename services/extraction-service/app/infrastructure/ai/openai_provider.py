@@ -93,9 +93,9 @@ class OpenAIProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type((APIError, RateLimitError))
     )
-    async def classify_document(self, document_content: Any) -> ClassificationResult:
+    async def classify_document(self, document_content: Any, prompt: str = None) -> ClassificationResult:
         images = self._convert_pdf_to_base64_images(document_content)
-        prompt = "Analyze the provided document images and classify its type based on the schema."
+        prompt = prompt or "Analyze the provided document images and classify its type based on the schema."
         messages = self._build_vision_messages(prompt, images)
 
         response = await self.client.beta.chat.completions.parse(

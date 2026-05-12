@@ -26,7 +26,7 @@ class AIProvider(ABC):
         pass
         
     @abstractmethod
-    async def find_sections(self, document_content: Any) -> List[Section]:
+    async def find_sections(self, document_content: Any, prompt: str = None) -> List[Section]:
         """
         Find relevant sections within the document.
         
@@ -39,7 +39,7 @@ class AIProvider(ABC):
         pass
         
     @abstractmethod
-    async def extract_fields(self, document_content: Any, schema: Type[BaseModel]) -> BaseModel:
+    async def extract_fields(self, document_content: Any, schema: Type[BaseModel], prompt: str = None) -> BaseModel:
         """
         Extract structured fields from the document based on a provided Pydantic schema.
         

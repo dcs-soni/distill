@@ -78,9 +78,9 @@ class GeminiProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type(APIError)
     )
-    async def find_sections(self, document_content: Any) -> List[Section]:
+    async def find_sections(self, document_content: Any, prompt: str = None) -> List[Section]:
         """Find sections within the document using structured JSON output."""
-        prompt = (
+        prompt = prompt or (
             "Analyze the provided document and identify all relevant financial sections "
             "(e.g., Income Statement, Balance Sheet, Cash Flow Statement, Notes to Accounts). "
             "Output a JSON list matching the requested schema."
@@ -109,9 +109,9 @@ class GeminiProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type(APIError)
     )
-    async def extract_fields(self, document_content: Any, schema: Type[BaseModel]) -> BaseModel:
+    async def extract_fields(self, document_content: Any, schema: Type[BaseModel], prompt: str = None) -> BaseModel:
         """Extract structured fields based on the dynamically provided Pydantic schema."""
-        prompt = (
+        prompt = prompt or (
             "Extract structured financial fields from the provided document content. "
             "Ensure the output accurately matches the requested schema and includes confidence scores."
         )

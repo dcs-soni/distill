@@ -130,9 +130,9 @@ class AnthropicProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type((APIError, RateLimitError))
     )
-    async def find_sections(self, document_content: Any) -> List[Section]:
+    async def find_sections(self, document_content: Any, prompt: str = None) -> List[Section]:
         images = self._convert_pdf_to_base64_images(document_content)
-        prompt = (
+        prompt = prompt or (
             "Analyze the provided document and identify all relevant financial sections "
             "(e.g., Income Statement, Balance Sheet, Cash Flow Statement, Notes to Accounts)."
         )
@@ -161,9 +161,9 @@ class AnthropicProvider(AIProvider):
         stop=stop_after_attempt(5),
         retry=retry_if_exception_type((APIError, RateLimitError))
     )
-    async def extract_fields(self, document_content: Any, schema: Type[BaseModel]) -> BaseModel:
+    async def extract_fields(self, document_content: Any, schema: Type[BaseModel], prompt: str = None) -> BaseModel:
         images = self._convert_pdf_to_base64_images(document_content)
-        prompt = (
+        prompt = prompt or (
             "Extract structured financial fields from the provided document content. "
             "Ensure the output accurately matches the requested schema and includes confidence scores."
         )

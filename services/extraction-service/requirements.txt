@@ -12,3 +12,5 @@ pydantic
 structlog
 aio-pika
 prometheus-fastapi-instrumentator
+pytest
+pytest-asyncio

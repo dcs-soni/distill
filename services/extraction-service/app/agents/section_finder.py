@@ -5,6 +5,7 @@ from typing import Any, List
 from app.application.dto.classification_result import ClassificationResult
 from app.application.dto.section import Section
 from app.infrastructure.ai.provider_factory import ProviderFactory
+from app.prompts.loader import PromptLoader
 
 logger = structlog.get_logger("extraction-service")
 
@@ -14,19 +15,16 @@ class SectionFinderAgent:
     Uses the AI Provider Factory to identify sections and their page ranges.
     """
     
-    def __init__(self, provider_factory: ProviderFactory):
+    def __init__(self, provider_factory: ProviderFactory, prompt_loader: PromptLoader = None):
         self.provider_factory = provider_factory
-        self.prompt_path = os.path.join(
-            os.path.dirname(__file__), "..", "prompts", "find_sections.txt"
-        )
+        self.prompt_loader = prompt_loader or PromptLoader()
         
     def _load_prompt(self) -> str:
         """Load the section finder prompt from the prompts directory."""
         try:
-            with open(self.prompt_path, "r", encoding="utf-8") as f:
-                return f.read()
+            return self.prompt_loader.load("find_sections")
         except FileNotFoundError:
-            logger.error(f"Prompt file not found at {self.prompt_path}")
+            logger.error("Prompt file not found for find_sections")
             return "Identify all relevant financial sections. Output a JSON list of sections."
 
     async def find_sections(self, document_content: Any, classification: ClassificationResult) -> List[Section]:

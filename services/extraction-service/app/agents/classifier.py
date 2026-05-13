@@ -4,6 +4,7 @@ from typing import Any
 
 from app.application.dto.classification_result import ClassificationResult
 from app.infrastructure.ai.provider_factory import ProviderFactory
+from app.prompts.loader import PromptLoader
 
 logger = structlog.get_logger("extraction-service")
 
@@ -13,19 +14,16 @@ class DocumentClassifierAgent:
     Uses the AI Provider Factory to execute the classification using vision models.
     """
     
-    def __init__(self, provider_factory: ProviderFactory):
+    def __init__(self, provider_factory: ProviderFactory, prompt_loader: PromptLoader = None):
         self.provider_factory = provider_factory
-        self.prompt_path = os.path.join(
-            os.path.dirname(__file__), "..", "prompts", "classify.txt"
-        )
+        self.prompt_loader = prompt_loader or PromptLoader()
         
     def _load_prompt(self) -> str:
         """Load the classification prompt from the prompts directory."""
         try:
-            with open(self.prompt_path, "r", encoding="utf-8") as f:
-                return f.read()
+            return self.prompt_loader.load("classify")
         except FileNotFoundError:
-            logger.error(f"Prompt file not found at {self.prompt_path}")
+            logger.error("Prompt file not found for classify")
             # Fallback prompt just in case
             return "Classify the provided financial document."
 

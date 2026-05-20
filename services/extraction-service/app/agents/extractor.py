@@ -3,7 +3,7 @@ from typing import Any, List
 from app.infrastructure.ai.provider_factory import ProviderFactory
 from app.prompts.loader import PromptLoader
 from app.application.dto.section import Section
-from app.domain.entities.financial_data import FinancialData
+from app.application.dto.raw_financial_data import RawFinancialData
 
 logger = structlog.get_logger("extraction-service")
 
@@ -22,7 +22,7 @@ class DataExtractionAgent:
             logger.error("Prompt file not found for extract_annual_report")
             return "Extract financial data into the requested JSON schema."
 
-    async def extract(self, document_content: Any, sections: List[Section]) -> FinancialData:
+    async def extract(self, document_content: Any, sections: List[Section]) -> RawFinancialData:
         prompt = self._load_prompt()
         
         # Determine the target pages from sections
@@ -56,11 +56,11 @@ class DataExtractionAgent:
             num_pages=len(targeted_content) if isinstance(targeted_content, list) else "unknown"
         )
         
-        # We pass FinancialData as the schema to enforce structured output
-        result: FinancialData = await self.provider_factory.execute(
+        # We pass RawFinancialData as the schema to enforce structured output
+        result: RawFinancialData = await self.provider_factory.execute(
             "extract_fields",
             document_content=targeted_content,
-            schema=FinancialData,
+            schema=RawFinancialData,
             prompt=prompt
         )
         

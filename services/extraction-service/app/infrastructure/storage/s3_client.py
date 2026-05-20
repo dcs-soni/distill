@@ -13,9 +13,9 @@ class S3Client:
         self.bucket_name = os.getenv("S3_BUCKET_NAME", "distill-documents") # pragma: allowlist secret
         
         self.session = aioboto3.Session(
-            aws_access_key_id=self.access_key,  # pragma: allowlist secret
-            aws_secret_access_key=self.secret_key,  # pragma: allowlist secret
-            region_name=self.region # pragma: allowlist secret
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            region_name=self.region
         )
 
     async def download_file(self, s3_key: str) -> bytes:

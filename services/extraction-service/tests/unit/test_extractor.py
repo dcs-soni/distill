@@ -2,20 +2,20 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from app.agents.extractor import DataExtractionAgent
 from app.application.dto.section import Section
-from app.domain.entities.financial_data import FinancialData
+from app.application.dto.raw_financial_data import RawFinancialData
 
 @pytest.mark.asyncio
 async def test_extractor_extracts_data():
     mock_factory = MagicMock()
     
-    mock_result = FinancialData(
+    mock_result = RawFinancialData(
         company_name="Test Corp",
         fiscal_year="FY24",
-        revenue=1000.0,
-        net_profit=100.0,
+        revenue="1000.0",
+        net_profit="100.0",
         ebitda=None,
-        total_assets=5000.0,
-        total_liabilities=2000.0,
+        total_assets="5000.0",
+        total_liabilities="2000.0",
         currency="USD",
         confidence_score=0.9,
         field_confidences={"revenue": 0.9}
@@ -38,7 +38,7 @@ async def test_extractor_extracts_data():
     result = await agent.extract(document_content, sections)
     
     assert result.company_name == "Test Corp"
-    assert result.revenue == 1000.0
+    assert result.revenue == "1000.0"
     
     # Should have extracted pages 2, 3, 4 (0-indexed in list -> indices 1, 2, 3)
     # The targeted content should be [b"page2", b"page3", b"page4"]
@@ -46,12 +46,12 @@ async def test_extractor_extracts_data():
     called_kwargs = mock_factory.execute.call_args.kwargs
     assert called_kwargs["prompt"] == "Test Prompt"
     assert called_kwargs["document_content"] == [b"page2", b"page3", b"page4"]
-    assert called_kwargs["schema"] == FinancialData
+    assert called_kwargs["schema"] == RawFinancialData
 
 @pytest.mark.asyncio
 async def test_extractor_no_sections_processes_all():
     mock_factory = MagicMock()
-    mock_factory.execute = AsyncMock(return_value=FinancialData(confidence_score=0.5))
+    mock_factory.execute = AsyncMock(return_value=RawFinancialData(confidence_score=0.5))
     
     agent = DataExtractionAgent(provider_factory=mock_factory)
     

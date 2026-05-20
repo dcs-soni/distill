@@ -11,6 +11,7 @@ pymupdf
 pydantic
 structlog
 aio-pika
+aioboto3
 prometheus-fastapi-instrumentator
 pytest
 pytest-asyncio

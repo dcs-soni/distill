@@ -1,0 +1,18 @@
+extraction-service:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    LOG_LEVEL: "DEBUG"
+    AI_PROVIDER_ORDER: "gemini"
+    AI_PROVIDER_OPENAI_ENABLED: "false"
+    AI_PROVIDER_ANTHROPIC_ENABLED: "false"
+  migration:
+    enabled: true

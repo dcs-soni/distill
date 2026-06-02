@@ -1,0 +1,18 @@
+extraction-service:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    LOG_LEVEL: "WARN"
+    AI_PROVIDER_ORDER: "gemini,openai,anthropic"
+  migration:
+    enabled: true

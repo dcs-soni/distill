@@ -1,0 +1,13 @@
+{
+  "sample_annual_report.pdf": {
+    "doc_type": "annual_report",
+    "company_name": "Reliance Industries Limited",
+    "fiscal_year": "2024-25",
+    "revenue": 9011800000000.0,
+    "net_profit": 790200000000.0,
+    "ebitda": 1835800000000.0,
+    "total_assets": 19787000000000.0,
+    "total_liabilities": 11432000000000.0,
+    "currency": "INR"
+  }
+}

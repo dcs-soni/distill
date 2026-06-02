@@ -26,3 +26,15 @@ dependencies = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/infrastructure/ai/*_provider.py"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

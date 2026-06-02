@@ -2,7 +2,6 @@
   "name": "@distill/validation-service",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "tsx watch src/bootstrap.ts",
     "build": "tsc",

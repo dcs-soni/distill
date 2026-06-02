@@ -1,4 +1,4 @@
-import { FinancialData } from '@distill/types';
+import { Extraction, FieldConfidence } from '@distill/types';
 import { TenantValidationConfig } from '../value-objects/TenantValidationConfig';
 import { ValidationRule, RuleResult } from './ValidationRule';
 
@@ -10,11 +10,14 @@ export class RequiredFieldsPresent implements ValidationRule {
   readonly severity = 'error';
   readonly description = 'All fields required by tenant config must be present';
 
-  validate(extraction: FinancialData, config: TenantValidationConfig): RuleResult {
+  validate(extraction: Extraction, config: TenantValidationConfig): RuleResult {
     const missing: string[] = [];
-    
+
     for (const field of config.requiredFields) {
-      const val = (extraction as any)[field];
+      const fieldConf = (extraction.data as unknown as Record<string, unknown>)[field] as
+        | FieldConfidence
+        | undefined;
+      const val = fieldConf?.value;
       if (val === null || val === undefined || val === '') {
         missing.push(field);
       }
@@ -27,9 +30,11 @@ export class RequiredFieldsPresent implements ValidationRule {
       category: this.category,
       severity: this.severity,
       passed,
-      message: passed ? 'All required fields present' : `Missing required fields: ${missing.join(', ')}`,
+      message: passed
+        ? 'All required fields present'
+        : `Missing required fields: ${missing.join(', ')}`,
       expected: config.requiredFields,
-      actual: missing
+      actual: missing,
     };
   }
 }
@@ -40,14 +45,21 @@ export class MinimumFieldCount implements ValidationRule {
   readonly severity = 'warning';
   readonly description = 'At least a certain number of fields should be extracted (default 5)';
 
-  validate(extraction: FinancialData, _config: TenantValidationConfig): RuleResult {
+  validate(extraction: Extraction, _config: TenantValidationConfig): RuleResult {
     const fieldsToCheck = [
-      extraction.companyName, extraction.fiscalYear, extraction.revenue, 
-      extraction.netProfit, extraction.ebitda, extraction.totalAssets, 
-      extraction.totalLiabilities, extraction.currency
+      extraction.data?.companyName?.value,
+      extraction.data?.fiscalYear?.value,
+      extraction.data?.revenue?.value,
+      extraction.data?.netProfit?.value,
+      extraction.data?.ebitda?.value,
+      extraction.data?.totalAssets?.value,
+      extraction.data?.totalLiabilities?.value,
+      extraction.data?.currency?.value,
     ];
-    
-    const presentCount = fieldsToCheck.filter(v => v !== null && v !== undefined && v !== '').length;
+
+    const presentCount = fieldsToCheck.filter(
+      (v) => v !== null && v !== undefined && v !== ''
+    ).length;
     const passed = presentCount >= 5;
 
     return {
@@ -55,9 +67,11 @@ export class MinimumFieldCount implements ValidationRule {
       category: this.category,
       severity: this.severity,
       passed,
-      message: passed ? 'Minimum field count met' : `Only ${presentCount} fields extracted, minimum is 5`,
+      message: passed
+        ? 'Minimum field count met'
+        : `Only ${presentCount} fields extracted, minimum is 5`,
       expected: 5,
-      actual: presentCount
+      actual: presentCount,
     };
   }
 }
@@ -68,9 +82,9 @@ export class NoCriticalNulls implements ValidationRule {
   readonly severity = 'error';
   readonly description = 'Critical identity fields (companyName, fiscalYear) must never be null';
 
-  validate(extraction: FinancialData, _config: TenantValidationConfig): RuleResult {
-    const passed = !!extraction.companyName && !!extraction.fiscalYear;
-    
+  validate(extraction: Extraction, _config: TenantValidationConfig): RuleResult {
+    const passed = !!extraction.data?.companyName?.value && !!extraction.data?.fiscalYear?.value;
+
     return {
       ruleName: this.name,
       category: this.category,
@@ -89,16 +103,18 @@ export class MinOverallConfidence implements ValidationRule {
   readonly severity = 'warning';
   readonly description = 'Overall confidence must meet the tenant review threshold';
 
-  validate(extraction: FinancialData, config: TenantValidationConfig): RuleResult {
-    const passed = extraction.confidenceScore >= config.reviewThreshold;
+  validate(extraction: Extraction, config: TenantValidationConfig): RuleResult {
+    const passed = extraction.overallConfidence >= config.reviewThreshold;
     return {
       ruleName: this.name,
       category: this.category,
       severity: this.severity,
       passed,
-      message: passed ? 'Confidence meets review threshold' : `Confidence ${extraction.confidenceScore} is below threshold ${config.reviewThreshold}`,
+      message: passed
+        ? 'Confidence meets review threshold'
+        : `Confidence ${extraction.overallConfidence} is below threshold ${config.reviewThreshold}`,
       expected: `>= ${config.reviewThreshold}`,
-      actual: extraction.confidenceScore
+      actual: extraction.overallConfidence,
     };
   }
 }
@@ -109,13 +125,16 @@ export class MinFieldConfidence implements ValidationRule {
   readonly severity = 'info';
   readonly description = 'Each field confidence should meet the tenant minimum';
 
-  validate(extraction: FinancialData, config: TenantValidationConfig): RuleResult {
+  validate(extraction: Extraction, config: TenantValidationConfig): RuleResult {
     const lowConfidenceFields: string[] = [];
-    
-    if (extraction.fieldConfidences) {
-      for (const [field, conf] of Object.entries(extraction.fieldConfidences)) {
-        if (conf < config.fieldConfidenceMin) {
-          lowConfidenceFields.push(`${field} (${conf})`);
+
+    if (extraction.data) {
+      for (const [field, fieldData] of Object.entries(extraction.data)) {
+        if (fieldData && typeof fieldData === 'object' && 'confidence' in fieldData) {
+          const conf = (fieldData as FieldConfidence).confidence;
+          if (conf < config.fieldConfidenceMin) {
+            lowConfidenceFields.push(`${field} (${conf})`);
+          }
         }
       }
     }
@@ -127,7 +146,9 @@ export class MinFieldConfidence implements ValidationRule {
       category: this.category,
       severity: this.severity,
       passed,
-      message: passed ? 'All fields meet minimum confidence' : `Low confidence fields: ${lowConfidenceFields.join(', ')}`,
+      message: passed
+        ? 'All fields meet minimum confidence'
+        : `Low confidence fields: ${lowConfidenceFields.join(', ')}`,
     };
   }
 }
@@ -138,15 +159,19 @@ export class HighConfidenceAutoApprove implements ValidationRule {
   readonly severity = 'info';
   readonly description = 'Check if extraction qualifies for auto-approval based on confidence';
 
-  validate(extraction: FinancialData, config: TenantValidationConfig): RuleResult {
-    const overallPassed = extraction.confidenceScore >= config.autoApproveThreshold;
-    
+  validate(extraction: Extraction, config: TenantValidationConfig): RuleResult {
+    const overallPassed = extraction.overallConfidence >= config.autoApproveThreshold;
+
     let allFieldsPassed = true;
-    if (extraction.fieldConfidences) {
-      for (const conf of Object.values(extraction.fieldConfidences)) {
-        if (conf < 0.80) { // Hardcoded 0.80 per M5 spec
-          allFieldsPassed = false;
-          break;
+    if (extraction.data) {
+      for (const fieldData of Object.values(extraction.data)) {
+        if (fieldData && typeof fieldData === 'object' && 'confidence' in fieldData) {
+          const conf = (fieldData as FieldConfidence).confidence;
+          if (conf < 0.8) {
+            // Hardcoded 0.80 per M5 spec
+            allFieldsPassed = false;
+            break;
+          }
         }
       }
     }
@@ -158,7 +183,9 @@ export class HighConfidenceAutoApprove implements ValidationRule {
       category: this.category,
       severity: this.severity,
       passed,
-      message: passed ? 'Eligible for auto-approve' : 'Does not meet auto-approve confidence threshold',
+      message: passed
+        ? 'Eligible for auto-approve'
+        : 'Does not meet auto-approve confidence threshold',
     };
   }
 }

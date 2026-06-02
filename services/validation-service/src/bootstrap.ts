@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { logger } from '@distill/utils';
 import Redis from 'ioredis';
 import { TenantConfigAdapter } from './infrastructure/config/TenantConfigAdapter';
@@ -21,7 +21,7 @@ const EXTRACTION_SERVICE_URL = process.env.EXTRACTION_SERVICE_URL || 'http://loc
 
 async function bootstrap() {
   const fastify = Fastify({
-    logger: logger.child({ module: 'fastify' })
+    logger: logger.child({ module: 'fastify' }),
   });
 
   // Security and CORS
@@ -37,7 +37,7 @@ async function bootstrap() {
   const tenantConfigAdapter = new TenantConfigAdapter(redis, AUTH_SERVICE_URL, logger);
   const extractionAdapter = new ExtractionAdapter(EXTRACTION_SERVICE_URL, logger);
   const eventPublisher = new RabbitMQPublisher(RABBITMQ_URL, logger);
-  
+
   const validateExtraction = new ValidateExtraction(
     tenantConfigAdapter,
     extractionAdapter,
@@ -49,10 +49,13 @@ async function bootstrap() {
   const rabbitMQConsumer = new RabbitMQConsumer(RABBITMQ_URL, validateExtraction, logger);
 
   // Routes
-  fastify.get('/health', async () => ({ status: 'ok', service: 'validation-service' }));
-  fastify.get('/ready', async () => ({ status: 'ok', rabbitmq: 'connected', redis: redis.status }));
-  
-  fastify.register(validationRoutes, { prefix: '/api/validations', controller: validationController });
+  fastify.get('/health', () => ({ status: 'ok', service: 'validation-service' }));
+  fastify.get('/ready', () => ({ status: 'ok', rabbitmq: 'connected', redis: redis.status }));
+
+  void fastify.register(validationRoutes, {
+    prefix: '/api/validations',
+    controller: validationController,
+  });
 
   // Lifecycle
   let isShuttingDown = false;
@@ -61,7 +64,7 @@ async function bootstrap() {
     if (isShuttingDown) return;
     isShuttingDown = true;
     logger.info('Shutting down Validation Service...');
-    
+
     try {
       await rabbitMQConsumer.stop();
       await eventPublisher.close();
@@ -75,8 +78,12 @@ async function bootstrap() {
     }
   };
 
-  process.on('SIGINT', gracefulShutdown);
-  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', () => {
+    void gracefulShutdown();
+  });
+  process.on('SIGTERM', () => {
+    void gracefulShutdown();
+  });
 
   try {
     // Start RabbitMQ
@@ -92,4 +99,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+void bootstrap();

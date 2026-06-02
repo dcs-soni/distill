@@ -1,11 +1,12 @@
 import { ExtractionProvider } from '../../application/ports/ExtractionProvider.port';
 import { Extraction } from '@distill/types';
 import { AppError } from '@distill/utils';
+import { Logger } from '../../application/use-cases/ValidateExtraction';
 
 export class ExtractionAdapter implements ExtractionProvider {
   constructor(
     private readonly extractionServiceUrl: string,
-    private readonly logger: any
+    private readonly logger: Logger
   ) {}
 
   async getExtraction(tenantId: string, extractionId: string): Promise<Extraction> {
@@ -13,8 +14,8 @@ export class ExtractionAdapter implements ExtractionProvider {
       const response = await fetch(`${this.extractionServiceUrl}/api/extractions/${extractionId}`, {
         headers: {
           'X-Internal-Service': 'validation-service',
-          'X-Tenant-Id': tenantId
-        }
+          'X-Tenant-Id': tenantId,
+        },
       });
 
       if (!response.ok) {
@@ -24,11 +25,19 @@ export class ExtractionAdapter implements ExtractionProvider {
         throw new Error(`Extraction service returned ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as unknown;
       return data as Extraction;
-    } catch (error: any) {
-      this.logger.error({ error: error.message, tenantId, extractionId }, 'Failed to fetch extraction data');
-      throw new AppError(`Failed to fetch extraction: ${error.message}`, 'EXTERNAL_SERVICE_ERROR', 502);
+    } catch (err: unknown) {
+      const error = err as Error;
+      this.logger.error(
+        { error: error.message, tenantId, extractionId },
+        'Failed to fetch extraction data'
+      );
+      throw new AppError(
+        `Failed to fetch extraction: ${error.message}`,
+        'EXTERNAL_SERVICE_ERROR',
+        502
+      );
     }
   }
 }

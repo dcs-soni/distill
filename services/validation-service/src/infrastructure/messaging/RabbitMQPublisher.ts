@@ -1,14 +1,15 @@
 import { EventPublisher } from '../../application/ports/EventPublisher.port';
 import { DomainEvent } from '@distill/types';
 import amqplib from 'amqplib';
+import { Logger } from '../../application/use-cases/ValidateExtraction';
 
 export class RabbitMQPublisher implements EventPublisher {
-  private connection: amqplib.Connection | null = null;
-  private channel: amqplib.Channel | null = null;
+  private connection: amqplib.ChannelModel | null = null;
+  private channel: amqplib.ConfirmChannel | null = null;
 
   constructor(
     private readonly rabbitUrl: string,
-    private readonly logger: any
+    private readonly logger: Logger
   ) {}
 
   async connect(): Promise<void> {
@@ -20,10 +21,11 @@ export class RabbitMQPublisher implements EventPublisher {
 
       // Assert validation exchange
       await this.channel.assertExchange('validation.exchange', 'topic', { durable: true });
-      
+
       this.logger.info('RabbitMQ Publisher connected');
-    } catch (error) {
-      this.logger.error({ error }, 'Failed to connect to RabbitMQ');
+    } catch (err: unknown) {
+      const error = err as Error;
+      this.logger.error({ error: error.message }, 'Failed to connect to RabbitMQ');
       throw error;
     }
   }
@@ -35,31 +37,27 @@ export class RabbitMQPublisher implements EventPublisher {
 
     const payload = Buffer.from(JSON.stringify(event));
 
-    return new Promise((resolve, reject) => {
-      this.channel!.publish(
-        exchange,
-        routingKey,
-        payload,
-        {
-          persistent: true,
-          contentType: 'application/json',
-          messageId: event.eventId,
-          timestamp: new Date(event.timestamp).getTime(),
-          appId: 'validation-service',
-          headers: {
-            'x-tenant-id': event.tenantId
-          }
+    try {
+      this.channel.publish(exchange, routingKey, payload, {
+        persistent: true,
+        contentType: 'application/json',
+        messageId: event.eventId,
+        timestamp: new Date(event.timestamp).getTime(),
+        appId: 'validation-service',
+        headers: {
+          'x-tenant-id': event.tenantId,
         },
-        (err) => {
-          if (err) {
-            this.logger.error({ error: err, eventId: event.eventId }, 'Failed to publish message');
-            reject(err);
-          } else {
-            resolve(true);
-          }
-        }
+      });
+      await this.channel.waitForConfirms();
+      return true;
+    } catch (err: unknown) {
+      const error = err as Error;
+      this.logger.error(
+        { error: error.message, eventId: event.eventId },
+        'Failed to publish message'
       );
-    });
+      throw error;
+    }
   }
 
   async close(): Promise<void> {

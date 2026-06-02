@@ -1,0 +1,11 @@
+extraction-service:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    maxReplicas: 3
+  env:
+    LOG_LEVEL: "INFO"
+    AI_PROVIDER_ORDER: "gemini,openai"
+    AI_PROVIDER_ANTHROPIC_ENABLED: "false"
+  migration:
+    enabled: true

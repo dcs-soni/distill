@@ -23,19 +23,18 @@ def mock_agents():
     return classifier, section_finder, extractor, normalizer
 
 @pytest.mark.asyncio
-async def test_pipeline_success(mock_agents):
+async def test_pipeline_success_and_weights(mock_agents):
     classifier, section_finder, extractor, normalizer = mock_agents
     pipeline = ExtractionPipeline(classifier, section_finder, extractor, normalizer)
     
     content = b"PDF_BYTES"
     result = await pipeline.process(content)
     
-    assert result.overall_confidence > 0.5
+    # 0.15*0.8 + 0.15*0.9 + 0.5*0.9 + 0.2*1.0 = 0.12 + 0.135 + 0.45 + 0.2 = 0.905
+    assert result.overall_confidence == 0.905
     assert result.data is not None
     assert result.classification is not None
     assert len(result.sections) == 1
-    
-    # Check that cache was populated
     assert len(pipeline._cache) == 1
 
 @pytest.mark.asyncio
@@ -49,17 +48,13 @@ async def test_pipeline_caching(mock_agents):
     # Process again
     await pipeline.process(content)
     
-    # Should only have been called once due to caching
     assert classifier.classify.call_count == 1
     assert section_finder.find_sections.call_count == 1
 
 @pytest.mark.asyncio
 async def test_pipeline_partial_failure(mock_agents):
     classifier, section_finder, extractor, normalizer = mock_agents
-    
-    # Make extraction fail
     extractor.extract.side_effect = Exception("API Timeout")
-    
     pipeline = ExtractionPipeline(classifier, section_finder, extractor, normalizer)
     
     result = await pipeline.process(b"FAIL_BYTES")
@@ -67,5 +62,30 @@ async def test_pipeline_partial_failure(mock_agents):
     assert result.overall_confidence == 0.01
     assert "API Timeout" in result.metadata["error"]
     assert result.data is None
-    # Ensure it wasn't cached
     assert len(pipeline._cache) == 0
+
+@pytest.mark.asyncio
+async def test_pipeline_no_sections_found(mock_agents):
+    classifier, section_finder, extractor, normalizer = mock_agents
+    # Section finder returns empty list
+    section_finder.find_sections = AsyncMock(return_value=[])
+    
+    pipeline = ExtractionPipeline(classifier, section_finder, extractor, normalizer)
+    result = await pipeline.process(b"NO_SECTIONS_BYTES")
+    
+    # Section confidence defaults to 1.0 when empty
+    # 0.15*0.8 + 0.15*1.0 + 0.5*0.9 + 0.2*1.0 = 0.12 + 0.15 + 0.45 + 0.2 = 0.92
+    assert result.overall_confidence == 0.92
+    assert result.data is not None
+    assert len(result.sections) == 0
+
+@pytest.mark.asyncio
+async def test_pipeline_cache_different_content(mock_agents):
+    classifier, section_finder, extractor, normalizer = mock_agents
+    pipeline = ExtractionPipeline(classifier, section_finder, extractor, normalizer)
+    
+    await pipeline.process(b"CONTENT_1")
+    await pipeline.process(b"CONTENT_2")
+    
+    assert classifier.classify.call_count == 2
+    assert len(pipeline._cache) == 2

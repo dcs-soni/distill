@@ -15,3 +15,5 @@ aioboto3
 prometheus-fastapi-instrumentator
 pytest
 pytest-asyncio
+pytest-cov
+httpx

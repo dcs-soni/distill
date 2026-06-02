@@ -1,7 +1,26 @@
 import { ValidationRule } from './ValidationRule';
-import { RevenueIsNumber, FiscalYearFormat, CurrencyCodeValid, CompanyNameNotEmpty, NumbersArePositive } from './FormatRules';
-import { RevenueGteProfit, AssetsApproxLiabilitiesEquity, EbitdaGteProfit, FiscalYearReasonable, RevenueNotZeroIfProfitExists } from './CrossFieldRules';
-import { RequiredFieldsPresent, MinimumFieldCount, NoCriticalNulls, MinOverallConfidence, MinFieldConfidence, HighConfidenceAutoApprove } from './CompletenessAndConfidenceRules';
+import {
+  RevenueIsNumber,
+  FiscalYearFormat,
+  CurrencyCodeValid,
+  CompanyNameNotEmpty,
+  NumbersArePositive,
+} from './FormatRules';
+import {
+  RevenueGteProfit,
+  AssetsApproxLiabilitiesEquity,
+  EbitdaGteProfit,
+  FiscalYearReasonable,
+  RevenueNotZeroIfProfitExists,
+} from './CrossFieldRules';
+import {
+  RequiredFieldsPresent,
+  MinimumFieldCount,
+  NoCriticalNulls,
+  MinOverallConfidence,
+  MinFieldConfidence,
+  HighConfidenceAutoApprove,
+} from './CompletenessAndConfidenceRules';
 
 export const ALL_RULES: ValidationRule[] = [
   // Format

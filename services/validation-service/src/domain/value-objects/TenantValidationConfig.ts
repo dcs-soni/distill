@@ -11,13 +11,13 @@ export interface TenantValidationConfig {
 }
 
 export const DEFAULT_VALIDATION_CONFIG: TenantValidationConfig = {
-  autoApproveThreshold: 0.90,
-  reviewThreshold: 0.70,
-  fieldConfidenceMin: 0.60,
+  autoApproveThreshold: 0.9,
+  reviewThreshold: 0.7,
+  fieldConfidenceMin: 0.6,
   requiredFields: ['companyName', 'fiscalYear', 'revenue'],
   disabledRules: [],
   tolerances: {
     revenueVsProfit: 0.05,
-    assetsVsLiabilities: 0.10,
-  }
+    assetsVsLiabilities: 0.1,
+  },
 };

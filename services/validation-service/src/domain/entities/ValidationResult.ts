@@ -78,14 +78,14 @@ export class ValidationResult {
     autoApproveThreshold: number,
     reviewThreshold: number
   ): ValidationResult {
-    const errors = ruleResults.filter(r => !r.passed && r.severity === 'error');
-    const warnings = ruleResults.filter(r => !r.passed && r.severity === 'warning');
-    const infos = ruleResults.filter(r => !r.passed && r.severity === 'info');
-    
+    const errors = ruleResults.filter((r) => !r.passed && r.severity === 'error');
+    const warnings = ruleResults.filter((r) => !r.passed && r.severity === 'warning');
+    const infos = ruleResults.filter((r) => !r.passed && r.severity === 'info');
+
     const passed = errors.length === 0;
 
     let routing: ValidationRouting;
-    
+
     if (errors.length > 0 || overallConfidence < reviewThreshold) {
       routing = 'PRIORITY_REVIEW';
     } else if (overallConfidence >= autoApproveThreshold && warnings.length === 0) {
@@ -104,7 +104,7 @@ export class ValidationResult {
       errors,
       warnings,
       infos,
-      routing
+      routing,
     });
   }
 }

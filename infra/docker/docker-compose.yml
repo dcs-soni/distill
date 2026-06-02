@@ -194,6 +194,54 @@ services:
     networks:
       - distill-network
 
+  # -------------------------------------
+  # Services
+  # -------------------------------------
+  extraction-service:
+    build:
+      context: ../../
+      dockerfile: services/extraction-service/Dockerfile
+    container_name: extraction-service
+    ports:
+      - '3003:3003'
+    environment:
+      - PORT=3003
+      - SERVICE_NAME=extraction-service
+      - DATABASE_URL=postgresql://${EXTRACTION_DB_USER}:${EXTRACTION_DB_PASS}@postgres-extraction:5432/extraction_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_ADMIN_USER}:${RABBITMQ_ADMIN_PASS}@rabbitmq:5672/distill
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - S3_BUCKET=distill-documents
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AI_PROVIDER_ORDER=gemini
+      - AI_PROVIDER_OPENAI_ENABLED=false
+      - AI_PROVIDER_ANTHROPIC_ENABLED=false
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      postgres-extraction:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3003/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    user: '1000:1000'
+    read_only: true
+    tmpfs:
+      - /tmp:size=500M
+    networks:
+      - distill-network
+
 networks:
   distill-network:
     driver: bridge

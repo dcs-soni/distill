@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-document-service
+  labels:
+    app: document-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app: document-service
+      app.kubernetes.io/instance: {{ .Release.Name }}

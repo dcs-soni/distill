@@ -168,6 +168,46 @@
       }
     },
     {
+      "name": "document.extraction.completed",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "document.extraction.completed"
+      }
+    },
+    {
+      "name": "document.validation.completed",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "document.validation.completed"
+      }
+    },
+    {
+      "name": "document.validation.needs_review",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "document.validation.needs_review"
+      }
+    },
+    {
+      "name": "document.review.completed",
+      "vhost": "distill",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx.exchange",
+        "x-dead-letter-routing-key": "document.review.completed"
+      }
+    },
+    {
       "name": "dead.letter.queue",
       "vhost": "distill",
       "durable": true,
@@ -206,6 +246,38 @@
       "destination_type": "queue",
       "destination": "dead.letter.queue",
       "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "extraction.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "document.extraction.completed",
+      "routing_key": "extraction.completed.*",
+      "arguments": {}
+    },
+    {
+      "source": "validation.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "document.validation.completed",
+      "routing_key": "validation.completed.*",
+      "arguments": {}
+    },
+    {
+      "source": "validation.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "document.validation.needs_review",
+      "routing_key": "validation.needs_review.*",
+      "arguments": {}
+    },
+    {
+      "source": "review.exchange",
+      "vhost": "distill",
+      "destination_type": "queue",
+      "destination": "document.review.completed",
+      "routing_key": "review.completed.*",
       "arguments": {}
     }
   ]

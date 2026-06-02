@@ -10,6 +10,7 @@ import { S3StorageAdapter } from './infrastructure/storage/S3StorageAdapter.js';
 import { PrismaBatchRepository } from './infrastructure/persistence/PrismaBatchRepository.js';
 import { RabbitMQPublisher } from './infrastructure/messaging/RabbitMQPublisher.js';
 import { OutboxRelay } from './infrastructure/messaging/OutboxRelay.js';
+import { StatusUpdateConsumer } from './infrastructure/messaging/StatusUpdateConsumer.js';
 import { UploadDocument } from './application/use-cases/UploadDocument.js';
 import { UploadBatch } from './application/use-cases/UploadBatch.js';
 import {
@@ -54,6 +55,7 @@ const storage = new S3StorageAdapter({
 
 let publisher: RabbitMQPublisher | null = null;
 let outboxRelay: OutboxRelay | null = null;
+let statusConsumer: StatusUpdateConsumer | null = null;
 
 /**
  * Lazy publisher proxy that delegates to the real RabbitMQ publisher when
@@ -139,6 +141,10 @@ const start = async () => {
       // The relay guarantees at-least-once delivery even when inline publish fails.
       outboxRelay = new OutboxRelay(prisma, publisher);
       outboxRelay.start();
+
+      // Start the status update consumer to listen for downstream pipeline events
+      statusConsumer = new StatusUpdateConsumer(process.env.RABBITMQ_URL, documentRepo, logger);
+      await statusConsumer.start();
     } else {
       if (process.env.NODE_ENV === 'production') {
         throw new Error('RABBITMQ_URL is required in production');
@@ -165,6 +171,10 @@ const gracefulShutdown = async (signal: string) => {
   // Stop the outbox relay first to prevent new publishes during shutdown
   if (outboxRelay) {
     outboxRelay.stop();
+  }
+
+  if (statusConsumer) {
+    await statusConsumer.stop();
   }
 
   await server.close();

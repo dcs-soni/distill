@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { ArrowLeft, GripVertical, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { FinancialData, ReviewAction, Correction } from '@distill/types';
@@ -182,7 +182,7 @@ export function ReviewDetailPage() {
       {/* Workspace */}
       <div className="flex-1 overflow-hidden p-4">
         <PanelGroup
-          direction="horizontal"
+          orientation="horizontal"
           className="h-full rounded-xl overflow-hidden shadow-sm border border-slate-200"
         >
           {/* Left Panel: PDF Viewer */}

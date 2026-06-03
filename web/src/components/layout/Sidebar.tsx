@@ -15,7 +15,7 @@ import { useUIStore } from '@/stores';
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/documents', icon: FileText, label: 'Documents' },
-  { to: '/review', icon: ClipboardCheck, label: 'Review' },
+  { to: '/reviews', icon: ClipboardCheck, label: 'Review' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

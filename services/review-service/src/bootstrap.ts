@@ -21,7 +21,6 @@ const server = Fastify({
 void server.register(cors);
 void server.register(helmet);
 
-// @ts-expect-error Type mismatch between fastify and fastify-type-provider-zod versions
 server.setValidatorCompiler(validatorCompiler);
 server.setSerializerCompiler(serializerCompiler);
 

@@ -12,10 +12,16 @@ export interface Review {
   id: ReviewId;
   tenantId: TenantId;
   documentId: DocumentId;
-  reviewerId: UserId;
-  action: ReviewAction;
+  extractionId: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  priority: 'NORMAL' | 'HIGH' | 'ESCALATED';
+  reviewerId: UserId | null;
+  action: ReviewAction | null;
   corrections: Correction[];
-  notes?: string;
-  durationMs: number;
+  notes?: string | null;
+  durationMs: number | null;
+  assignedAt?: string | null;
+  completedAt?: string | null;
   createdAt: string;
+  updatedAt: string;
 }

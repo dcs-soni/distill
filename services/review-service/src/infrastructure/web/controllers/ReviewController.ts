@@ -50,7 +50,13 @@ export class ReviewController {
       query.priority
     );
 
-    return reply.send(result);
+    return reply.send({
+      items: result.data.map((review) => review.toDTO()),
+      total: result.meta.total,
+      page: result.meta.page,
+      limit: result.meta.limit,
+      totalPages: Math.ceil(result.meta.total / result.meta.limit),
+    });
   };
 
   getReviewDetail = async (req: FastifyRequest, reply: FastifyReply) => {
@@ -63,6 +69,9 @@ export class ReviewController {
     const { id } = req.params as { id: string };
     const result = await this.getReviewDetailUseCase.execute(tenantId, id);
 
+    if (!result) {
+      return reply.send(null);
+    }
     return reply.send(result);
   };
 

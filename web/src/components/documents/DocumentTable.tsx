@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -52,12 +52,15 @@ export function DocumentTable({
   const navigate = useNavigate();
   const deleteMutation = useDeleteDocument();
 
-  const handleSort = (columnId: string) => {
-    const current = sorting.find((s) => s.id === columnId);
-    const newOrder = current?.desc === false ? 'desc' : 'asc';
-    setSorting([{ id: columnId, desc: newOrder === 'desc' }]);
-    onSortChange(columnId, newOrder);
-  };
+  const handleSort = useCallback(
+    (columnId: string) => {
+      const current = sorting.find((s) => s.id === columnId);
+      const newOrder = current?.desc === false ? 'desc' : 'asc';
+      setSorting([{ id: columnId, desc: newOrder === 'desc' }]);
+      onSortChange(columnId, newOrder);
+    },
+    [sorting, onSortChange]
+  );
 
   const toggleRow = (id: string) => {
     setSelectedRows((prev) => {
@@ -68,13 +71,13 @@ export function DocumentTable({
     });
   };
 
-  const toggleAll = () => {
-    if (selectedRows.size === data.length) {
+  const toggleAll = useCallback(() => {
+    if (selectedRows.size === data.length && data.length > 0) {
       setSelectedRows(new Set());
     } else {
       setSelectedRows(new Set(data.map((d) => d.id)));
     }
-  };
+  }, [selectedRows.size, data]);
 
   const handleBulkDelete = async () => {
     for (const id of selectedRows) {
@@ -248,7 +251,7 @@ export function DocumentTable({
         size: 50,
       },
     ],
-    [sorting, selectedRows, openMenu, data]
+    [sorting, selectedRows, openMenu, data, deleteMutation, handleSort, navigate, toggleAll]
   );
 
   const table = useReactTable({

@@ -1,8 +1,32 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+model Review {
+  id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  documentId    String    @map("document_id")
+  extractionId  String    @map("extraction_id")
+  status        String    @default("PENDING")  // PENDING | IN_PROGRESS | COMPLETED
+  priority      String    @default("NORMAL")   // NORMAL | HIGH | ESCALATED
+  reviewerId    String?   @map("reviewer_id")
+  action        String?   // APPROVED | CORRECTED | REJECTED | ESCALATED
+  corrections   Json      @default("[]")
+  notes         String?
+  durationMs    Int?      @map("duration_ms")
+  assignedAt    DateTime? @map("assigned_at")
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, priority, createdAt])
+  @@index([tenantId, reviewerId])
+  @@index([documentId])
+  @@map("reviews")
 }

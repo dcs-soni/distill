@@ -36,7 +36,6 @@ describe('Review Flow Integration', () => {
   beforeAll(async () => {
     app = Fastify({ logger: false });
 
-    // @ts-expect-error Type mismatch
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
 

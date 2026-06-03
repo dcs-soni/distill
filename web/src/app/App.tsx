@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider, ProtectedRoute } from './AuthProvider';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -7,6 +8,8 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { DocumentsPage } from '@/pages/documents/DocumentsPage';
 import { DocumentDetailPage } from '@/pages/documents/DocumentDetailPage';
+import { ReviewQueuePage } from '@/pages/review/ReviewQueuePage';
+import { ReviewDetailPage } from '@/pages/review/ReviewDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,15 +39,9 @@ export function App() {
               <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/documents/:id" element={<DocumentDetailPage />} />
 
-              {/* Placeholder routes for future milestones */}
-              <Route
-                path="/review"
-                element={<PlaceholderPage title="Review Queue" milestone="M6" />}
-              />
-              <Route
-                path="/review/:id"
-                element={<PlaceholderPage title="Review Detail" milestone="M6" />}
-              />
+              {/* Review Routes */}
+              <Route path="/reviews" element={<ReviewQueuePage />} />
+              <Route path="/reviews/:id" element={<ReviewDetailPage />} />
               <Route
                 path="/analytics"
                 element={<PlaceholderPage title="Analytics" milestone="M8" />}
@@ -59,6 +56,7 @@ export function App() {
             <Route path="*" element={<LoginPage />} />
           </Routes>
         </BrowserRouter>
+        <Toaster position="bottom-right" />
       </AuthProvider>
     </QueryClientProvider>
   );

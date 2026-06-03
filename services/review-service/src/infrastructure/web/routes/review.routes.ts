@@ -10,7 +10,7 @@ export async function reviewRoutes(
   const { controller } = options;
 
   fastify.get(
-    '/',
+    '/pending',
     {
       schema: {
         querystring: z.object({

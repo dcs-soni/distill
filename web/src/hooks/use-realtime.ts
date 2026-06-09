@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSocket } from '../app/SocketProvider';
+import { useSocket } from '../app/SocketContext';
 import { useQueryClient } from '@tanstack/react-query';
 
 export interface NotificationPayload {

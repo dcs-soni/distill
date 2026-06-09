@@ -1,5 +1,6 @@
 import { useAuthStore, useUIStore } from '@/stores';
 import { LogOut, User } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
@@ -18,6 +19,9 @@ export function Header() {
       <div />
 
       <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <NotificationBell />
+
         {/* User menu */}
         <div className="flex items-center gap-3">
           <div

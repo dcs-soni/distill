@@ -10,6 +10,7 @@ import { ExtractionEditor } from '../../components/review/ExtractionEditor';
 import { ConfidenceHeatmap } from '../../components/review/ConfidenceHeatmap';
 import { ReviewActions } from '../../components/review/ReviewActions';
 import { documentApi } from '../../services/document-api'; // For getting the presigned URL or download URL
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 export function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -187,7 +188,9 @@ export function ReviewDetailPage() {
         >
           {/* Left Panel: PDF Viewer */}
           <Panel defaultSize={55} minSize={30} className="bg-white">
-            <PDFViewer url={pdfUrl} className="h-full rounded-none border-none" />
+            <ErrorBoundary fallbackMessage="Failed to load PDF viewer">
+              <PDFViewer url={pdfUrl} className="h-full rounded-none border-none" />
+            </ErrorBoundary>
           </Panel>
 
           {/* Resize Handle */}
@@ -207,13 +210,15 @@ export function ReviewDetailPage() {
               </div>
 
               {/* Editor Section */}
-              <div className="flex-1 min-w-0">
-                <ExtractionEditor
-                  extraction={extraction.data}
-                  editedData={editedData}
-                  onFieldChange={handleFieldChange}
-                  onReset={handleResetField}
-                />
+              <div className="flex-1 min-w-0 p-4">
+                <ErrorBoundary fallbackMessage="Failed to load extraction editor">
+                  <ExtractionEditor
+                    extraction={extraction.data}
+                    editedData={editedData}
+                    onFieldChange={handleFieldChange}
+                    onReset={handleResetField}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
 

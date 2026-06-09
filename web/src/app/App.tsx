@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider, ProtectedRoute } from './AuthProvider';
+import { SocketProvider } from './SocketProvider';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
@@ -24,39 +25,41 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
+        <SocketProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
 
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/documents" element={<DocumentsPage />} />
-              <Route path="/documents/:id" element={<DocumentDetailPage />} />
-
-              {/* Review Routes */}
-              <Route path="/reviews" element={<ReviewQueuePage />} />
-              <Route path="/reviews/:id" element={<ReviewDetailPage />} />
               <Route
-                path="/analytics"
-                element={<PlaceholderPage title="Analytics" milestone="M8" />}
-              />
-              <Route
-                path="/settings"
-                element={<PlaceholderPage title="Settings" milestone="M9" />}
-              />
-            </Route>
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/documents/:id" element={<DocumentDetailPage />} />
 
-            {/* Catch-all — redirect to dashboard */}
-            <Route path="*" element={<LoginPage />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster position="bottom-right" />
+                {/* Review Routes */}
+                <Route path="/reviews" element={<ReviewQueuePage />} />
+                <Route path="/reviews/:id" element={<ReviewDetailPage />} />
+                <Route
+                  path="/analytics"
+                  element={<PlaceholderPage title="Analytics" milestone="M8" />}
+                />
+                <Route
+                  path="/settings"
+                  element={<PlaceholderPage title="Settings" milestone="M9" />}
+                />
+              </Route>
+
+              {/* Catch-all — redirect to dashboard */}
+              <Route path="*" element={<LoginPage />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster position="bottom-right" />
+        </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

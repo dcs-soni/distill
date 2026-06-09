@@ -1,20 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores';
 import toast from 'react-hot-toast';
 import type { NotificationPayload } from '../hooks/use-realtime';
 
-interface SocketContextValue {
-  socket: Socket | null;
-  isConnected: boolean;
-}
-
-const SocketContext = createContext<SocketContextValue>({
-  socket: null,
-  isConnected: false,
-});
-
-export const useSocket = () => useContext(SocketContext);
+import { SocketContext } from './SocketContext';
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -74,7 +64,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    setSocket(socketInstance);
+    setTimeout(() => {
+      setSocket(socketInstance);
+    }, 0);
 
     return () => {
       socketInstance.disconnect();

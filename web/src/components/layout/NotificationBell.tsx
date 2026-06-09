@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { useSocket } from '../../app/SocketProvider';
+import { useSocket } from '@/app/SocketContext';
 import type { NotificationPayload } from '../../hooks/use-realtime';
 
 interface AppNotification {

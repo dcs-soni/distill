@@ -12,6 +12,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, PartyPopper } from 'lu
 import { usePendingReviews } from '../../hooks/use-reviews';
 import type { Review } from '@distill/types';
 import { cn, formatDate } from '../../lib/utils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 export function ReviewQueuePage() {
   const [page, setPage] = useState(1);
@@ -150,65 +151,69 @@ export function ReviewQueuePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b border-slate-200 bg-slate-50">
-                    {hg.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i}>
-                      {columns.map((_, ci) => (
-                        <td key={ci} className="px-6 py-4">
-                          <div className="h-4 bg-slate-100 rounded animate-pulse" />
-                        </td>
+            <ErrorBoundary fallbackMessage="Failed to load review queue">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  {table.getHeaderGroups().map((hg) => (
+                    <tr key={hg.id} className="border-b border-slate-200 bg-slate-50">
+                      {hg.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
                       ))}
                     </tr>
-                  ))
-                ) : data?.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length} className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
-                          <PartyPopper className="w-8 h-8" />
+                  ))}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        {columns.map((_, ci) => (
+                          <td key={ci} className="px-6 py-4">
+                            <div className="h-4 bg-slate-100 rounded animate-pulse" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : data?.items.length === 0 ? (
+                    <tr>
+                      <td colSpan={columns.length} className="px-6 py-16 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
+                            <PartyPopper className="w-8 h-8" />
+                          </div>
+                          <h3 className="text-lg font-medium text-slate-900">
+                            No reviews pending 🎉
+                          </h3>
+                          <p className="text-sm text-slate-500">All caught up. Great job!</p>
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900">Queue is empty!</h3>
-                        <p className="text-sm text-slate-500">All caught up. Great job!</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="transition-colors hover:bg-slate-50 group cursor-pointer"
-                      onClick={() => {
-                        void navigate(`/reviews/${row.original.id}`);
-                      }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-6 py-4">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
+                      </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="transition-colors hover:bg-slate-50 group cursor-pointer"
+                        onClick={() => {
+                          void navigate(`/reviews/${row.original.id}`);
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-6 py-4">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </ErrorBoundary>
           </div>
 
           {/* Pagination Component */}

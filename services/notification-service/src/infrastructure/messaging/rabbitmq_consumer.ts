@@ -4,6 +4,7 @@ import { getIO } from '../web/SocketIOAdapter.js';
 import type { DomainEvent } from '@distill/types';
 
 import type pino from 'pino';
+import { emailAdapter } from '../email/EmailAdapter.js';
 
 export const startConsumer = async () => {
   const url = process.env.RABBITMQ_URL || 'amqp://admin:admin_password@localhost:5672';
@@ -64,7 +65,9 @@ export const startConsumer = async () => {
       });
 
       // Also emit to document specific room if documentId is present
-      const payloadWithDocId = event.payload as { documentId?: string } | undefined;
+      const payloadWithDocId = event.payload as
+        | { documentId?: string; fileName?: string; error?: string; status?: string }
+        | undefined;
       if (payloadWithDocId && payloadWithDocId.documentId) {
         const docRoom = `document:${payloadWithDocId.documentId}`;
         io.to(docRoom).emit('document_update', {
@@ -73,6 +76,25 @@ export const startConsumer = async () => {
           timestamp: event.timestamp,
           data: event.payload,
         });
+
+        // Trigger email on failures
+        if (
+          event.eventType === 'document.failed' ||
+          (event.eventType === 'extraction.completed' && payloadWithDocId.status === 'FAILED')
+        ) {
+          const documentName = payloadWithDocId.fileName || payloadWithDocId.documentId;
+          const errorReason = payloadWithDocId.error || 'Unknown error occurred during processing.';
+          const adminEmail = process.env.ADMIN_EMAIL || 'admin@distill.local';
+
+          emailAdapter
+            .sendDocumentFailedEmail(adminEmail, documentName, errorReason)
+            .catch((err) => {
+              logger.error(
+                { err, documentId: payloadWithDocId.documentId },
+                'Failed to send failure email'
+              );
+            });
+        }
       }
 
       return Promise.resolve();

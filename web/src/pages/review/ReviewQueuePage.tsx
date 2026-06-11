@@ -107,6 +107,7 @@ export function ReviewQueuePage() {
     [sorting, navigate, handleSort]
   );
 
+  // eslint-disable-next-line
   const table = useReactTable({
     data: data?.items || [],
     columns,

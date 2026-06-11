@@ -4,6 +4,9 @@ import helmet from '@fastify/helmet';
 import { logger } from '@distill/utils/src/logger.js';
 import { initializeSocketIO } from './infrastructure/web/SocketIOAdapter.js';
 import { startConsumer } from './infrastructure/messaging/rabbitmq_consumer.js';
+import { register, collectDefaultMetrics } from 'prom-client';
+
+collectDefaultMetrics();
 
 const server = Fastify({
   logger: false, // We use custom Pino logic instead
@@ -24,7 +27,8 @@ server.get('/ready', async (_, reply) => {
 });
 
 server.get('/metrics', async (_, reply) => {
-  return reply.send('# HELP placeholder metrics output\\n# TYPE placeholder counter\\n');
+  void reply.header('Content-Type', register.contentType);
+  return reply.send(await register.metrics());
 });
 
 const start = async () => {

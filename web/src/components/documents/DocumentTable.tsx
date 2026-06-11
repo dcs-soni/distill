@@ -254,6 +254,7 @@ export function DocumentTable({
     [sorting, selectedRows, openMenu, data, deleteMutation, handleSort, navigate, toggleAll]
   );
 
+  // eslint-disable-next-line
   const table = useReactTable({
     data,
     columns,

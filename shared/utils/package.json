@@ -21,7 +21,7 @@
   "dependencies": {
     "@distill/types": "*",
     "@paralleldrive/cuid2": "^2.2.2",
-    "amqplib": "^0.10.3",
+    "amqplib": "^1.0.3",
     "pino": "^9.0.0",
     "sanitize-html": "^2.13.0"
   },

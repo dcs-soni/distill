@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/bootstrap.ts",
+    "prebuild": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
     "build": "tsc",
     "start": "node dist/bootstrap.js",
+    "pretest": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
     "test": "vitest run",
     "test:watch": "vitest",
+    "prelint": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
     "lint": "eslint .",
+    "pretypecheck": "npx prisma generate --schema=src/infrastructure/persistence/prisma/schema.prisma",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

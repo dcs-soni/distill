@@ -59,8 +59,10 @@ export const startConsumer = async (
           documentId: ev.payload.documentId,
           status: 'EXTRACTION_COMPLETED',
           extractionConfidence: ev.payload.confidenceScore,
-          extractionLatencyMs: undefined,
-          costUsd: undefined,
+          extractionLatencyMs: ev.payload.latencyMs,
+          costUsd: ev.payload.costUsd,
+          aiProvider: ev.payload.aiProvider,
+          docType: ev.payload.docType,
         });
         break;
       }
@@ -95,11 +97,11 @@ export const startConsumer = async (
 
         await recordReviewMetrics.execute({
           tenantId: ev.tenantId,
-          reviewerId: 'unknown-reviewer',
+          reviewerId: ev.payload.reviewerId,
           documentId: ev.payload.documentId,
           action: ev.payload.action,
-          correctionsCount: 0,
-          durationMs: 0,
+          correctionsCount: ev.payload.correctionsCount ?? 0,
+          durationMs: ev.payload.durationMs ?? 0,
         });
         break;
       }

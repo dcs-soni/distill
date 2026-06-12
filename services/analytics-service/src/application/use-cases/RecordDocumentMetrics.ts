@@ -8,6 +8,8 @@ interface DocumentMetricsPayload {
   extractionConfidence?: number;
   extractionLatencyMs?: number;
   costUsd?: number;
+  docType?: string;
+  aiProvider?: string;
 }
 
 export class RecordDocumentMetrics {
@@ -24,6 +26,8 @@ export class RecordDocumentMetrics {
         extractionConfidence: payload.extractionConfidence,
         extractionLatencyMs: payload.extractionLatencyMs,
         costUsd: payload.costUsd,
+        docType: payload.docType,
+        aiProvider: payload.aiProvider,
       },
     });
   }

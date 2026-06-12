@@ -14,6 +14,7 @@ export type DocumentUploadedEvent = DomainEvent<{
   fileName: string;
   s3Key: string;
   mimeType: string;
+  docType?: string;
 }>;
 
 export type ExtractionCompletedEvent = DomainEvent<{
@@ -21,6 +22,10 @@ export type ExtractionCompletedEvent = DomainEvent<{
   extractionId: ExtractionId;
   status: 'SUCCESS' | 'PARTIAL' | 'FAILED';
   confidenceScore: number;
+  latencyMs?: number;
+  costUsd?: number;
+  aiProvider?: string;
+  docType?: string;
 }>;
 
 export type ValidationCompletedEvent = DomainEvent<{
@@ -40,5 +45,9 @@ export type ValidationNeedsReviewEvent = DomainEvent<{
 export type ReviewCompletedEvent = DomainEvent<{
   documentId: DocumentId;
   reviewId: ReviewId;
+  reviewerId: string;
   action: 'APPROVED' | 'CORRECTED' | 'REJECTED' | 'ESCALATED';
+  correctionsCount?: number;
+  durationMs?: number;
+  docType?: string;
 }>;

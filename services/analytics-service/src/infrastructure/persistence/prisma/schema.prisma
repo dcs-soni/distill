@@ -17,6 +17,8 @@ model DocumentMetrics {
   extractionConfidence Float?
   extractionLatencyMs  Int?
   costUsd              Float?
+  docType              String?
+  aiProvider           String?
 
   @@id([id, timestamp])
   @@index([tenantId, timestamp])

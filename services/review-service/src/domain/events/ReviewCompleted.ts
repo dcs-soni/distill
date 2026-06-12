@@ -16,6 +16,10 @@ export interface ReviewCompletedEvent extends DomainEvent {
     reviewId: ReviewId;
     action: ReviewAction;
     corrections?: Correction[];
+    reviewerId: string;
+    durationMs?: number;
+    correctionsCount?: number;
+    docType?: string;
   };
 }
 
@@ -25,6 +29,8 @@ export function createReviewCompletedEvent(
   reviewId: string,
   action: ReviewAction,
   corrections?: Correction[],
+  reviewerId?: string,
+  durationMs?: number,
   correlationId?: string
 ): ReviewCompletedEvent {
   return {
@@ -39,6 +45,9 @@ export function createReviewCompletedEvent(
       reviewId: reviewId as ReviewId,
       action,
       corrections,
+      reviewerId: reviewerId || 'unknown',
+      durationMs,
+      correctionsCount: corrections ? corrections.length : 0,
     },
   };
 }

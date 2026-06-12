@@ -6,10 +6,19 @@ import { PrismaClient } from './infrastructure/persistence/generated/client/inde
 import { startConsumer } from './infrastructure/messaging/MetricsConsumer.js';
 import { RecordDocumentMetrics } from './application/use-cases/RecordDocumentMetrics.js';
 import { RecordReviewMetrics } from './application/use-cases/RecordReviewMetrics.js';
+import { GetDashboardMetrics } from './application/use-cases/GetDashboardMetrics.js';
+import { GetAccuracyReport } from './application/use-cases/GetAccuracyReport.js';
+import { GetCostReport } from './application/use-cases/GetCostReport.js';
+import { GetReviewerReport } from './application/use-cases/GetReviewerReport.js';
+import { metricsRoutes } from './interfaces/http/routes/metrics.js';
 
 const prisma = new PrismaClient();
 const recordDocumentMetrics = new RecordDocumentMetrics(prisma);
 const recordReviewMetrics = new RecordReviewMetrics(prisma);
+const getDashboardMetrics = new GetDashboardMetrics(prisma);
+const getAccuracyReport = new GetAccuracyReport(prisma);
+const getCostReport = new GetCostReport(prisma);
+const getReviewerReport = new GetReviewerReport(prisma);
 
 const server = Fastify({
   logger: false, // We use custom Pino logic instead
@@ -29,6 +38,16 @@ server.get('/ready', async (_, reply) => {
 server.get('/metrics', async (_, reply) => {
   return reply.send('# HELP placeholder metrics output\n# TYPE placeholder counter\n');
 });
+
+void server.register(
+  metricsRoutes({
+    getDashboardMetrics,
+    getAccuracyReport,
+    getCostReport,
+    getReviewerReport,
+  }),
+  { prefix: '/api/metrics' }
+);
 
 const start = async () => {
   try {

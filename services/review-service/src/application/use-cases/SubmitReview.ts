@@ -73,6 +73,8 @@ export class SubmitReview {
         review.id,
         review.action!,
         review.corrections,
+        reviewerId,
+        durationMs,
         review.id
       );
 

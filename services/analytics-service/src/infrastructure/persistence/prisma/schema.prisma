@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DocumentMetrics {
+  id                   String
+  tenantId             String
+  documentId           String
+  timestamp            DateTime @db.Timestamptz(3)
+  status               String
+  extractionConfidence Float?
+  extractionLatencyMs  Int?
+  costUsd              Float?
+
+  @@id([id, timestamp])
+  @@index([tenantId, timestamp])
+  @@index([documentId])
+}
+
+model ReviewMetrics {
+  id               String
+  tenantId         String
+  reviewerId       String
+  documentId       String
+  timestamp        DateTime @db.Timestamptz(3)
+  action           String
+  correctionsCount Int
+  durationMs       Int
+
+  @@id([id, timestamp])
+  @@index([tenantId, timestamp])
+  @@index([reviewerId, timestamp])
+}

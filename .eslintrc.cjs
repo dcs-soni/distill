@@ -38,7 +38,7 @@ module.exports = {
       },
     },
     {
-      files: ['web/**/*.{js,cjs,mjs}', '*.config.js'],
+      files: ['web/**/*.{js,cjs,mjs}', '*.config.js', '*.config.ts'],
       extends: ['plugin:@typescript-eslint/disable-type-checked'],
     },
     {

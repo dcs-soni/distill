@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, RotateCw } from 'lucide-react';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { cn } from '../../lib/utils';
 
 // Configure pdfjs worker

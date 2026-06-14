@@ -46,7 +46,7 @@ void server.register(
     getCostReport,
     getReviewerReport,
   }),
-  { prefix: '/api/metrics' }
+  { prefix: '/analytics' }
 );
 
 const start = async () => {

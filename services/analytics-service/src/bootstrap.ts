@@ -10,6 +10,7 @@ import { GetDashboardMetrics } from './application/use-cases/GetDashboardMetrics
 import { GetAccuracyReport } from './application/use-cases/GetAccuracyReport.js';
 import { GetCostReport } from './application/use-cases/GetCostReport.js';
 import { GetReviewerReport } from './application/use-cases/GetReviewerReport.js';
+import { GetThroughputReport } from './application/use-cases/GetThroughputReport.js';
 import { metricsRoutes } from './interfaces/http/routes/metrics.js';
 
 const prisma = new PrismaClient();
@@ -19,6 +20,7 @@ const getDashboardMetrics = new GetDashboardMetrics(prisma);
 const getAccuracyReport = new GetAccuracyReport(prisma);
 const getCostReport = new GetCostReport(prisma);
 const getReviewerReport = new GetReviewerReport(prisma);
+const getThroughputReport = new GetThroughputReport(prisma);
 
 const server = Fastify({
   logger: false, // We use custom Pino logic instead
@@ -45,6 +47,7 @@ void server.register(
     getAccuracyReport,
     getCostReport,
     getReviewerReport,
+    getThroughputReport,
   }),
   { prefix: '/analytics' }
 );

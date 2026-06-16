@@ -1,8 +1,4 @@
 import fastify from 'fastify';
-import cors from '@fastify/cors';
-import helmet from '@fastify/helmet';
-import crypto from 'crypto';
-import client from 'prom-client';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -14,19 +10,10 @@ declare module 'fastify' {
     };
   }
 }
-
-// Create a Registry for Prometheus metrics
-const register = new client.Registry();
-client.collectDefaultMetrics({ register });
-
-// Define custom metrics here if needed
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_ms',
-  help: 'Duration of HTTP requests in ms',
-  labelNames: ['method', 'route', 'code'],
-  buckets: [0.1, 5, 15, 50, 100, 500],
-});
-register.registerMetric(httpRequestDurationMicroseconds);
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import crypto from 'crypto';
+import { setupMetrics } from '@distill/utils';
 
 export const server = fastify({
   logger: {
@@ -51,16 +38,6 @@ server.addHook('onRequest', (request, reply, done) => {
   request.startTime = performance.now();
   request.headers['x-request-id'] = request.id;
   void reply.header('x-request-id', request.id);
-  done();
-});
-
-server.addHook('onResponse', (request, reply, done) => {
-  if (request.startTime) {
-    const duration = performance.now() - request.startTime;
-    httpRequestDurationMicroseconds
-      .labels(request.method, request.routeOptions.url || request.url, reply.statusCode.toString())
-      .observe(duration);
-  }
   done();
 });
 
@@ -102,10 +79,7 @@ export async function buildServer() {
     return { status: 'ready' };
   });
 
-  server.get('/metrics', async (request, reply) => {
-    void reply.header('Content-Type', register.contentType);
-    return await register.metrics();
-  });
+  void setupMetrics(server, 'gateway');
 
   const isTest = process.env.NODE_ENV === 'test' || process.env.REDIS_URL === 'redis://mocked';
 

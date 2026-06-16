@@ -1,7 +1,7 @@
 import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { AppError, logger } from '@distill/utils';
+import { AppError, logger, setupMetrics } from '@distill/utils';
 
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { AuthPlugin } from './infrastructure/web/plugins/AuthPlugin.js';
@@ -59,9 +59,7 @@ server.get('/ready', async (_, reply) => {
   return reply.send({ status: 'ready' });
 });
 
-server.get('/metrics', async (_, reply) => {
-  return reply.send('# HELP placeholder metrics output\n# TYPE placeholder counter\n');
-});
+void setupMetrics(server, 'auth-service');
 
 const start = async () => {
   try {

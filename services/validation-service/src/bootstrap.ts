@@ -1,3 +1,4 @@
+import { setupMetrics } from '@distill/utils';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -23,6 +24,8 @@ async function bootstrap() {
   const fastify = Fastify({
     logger: logger.child({ module: 'fastify' }),
   });
+
+  void setupMetrics(fastify, 'validation-service');
 
   // Security and CORS
   await fastify.register(cors, { origin: true });

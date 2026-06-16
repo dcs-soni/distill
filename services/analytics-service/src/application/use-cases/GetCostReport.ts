@@ -1,11 +1,17 @@
 import { PrismaClient } from '../../infrastructure/persistence/generated/client/index.js';
 
+export interface CostDataPoint {
+  date: string;
+  [key: string]: string | number; // providerName -> cost
+}
+
 export interface CostReportResult {
   totalCost: number;
   monthlyBurnRate: number;
   costByDocType: Record<string, number>;
   costByProvider: Record<string, number>;
   costByTenant?: Record<string, number>; // Only if admin view
+  costOverTime: CostDataPoint[];
 }
 
 export class GetCostReport {
@@ -46,11 +52,35 @@ export class GetCostReport {
       if (g.aiProvider) costByProvider[g.aiProvider] = g._sum.costUsd!;
     });
 
+    const allCostMetrics = await this.prisma.documentMetrics.findMany({
+      where: { tenantId, costUsd: { not: null } },
+      select: { timestamp: true, costUsd: true, aiProvider: true },
+      orderBy: { timestamp: 'asc' },
+    });
+
+    const timeSeriesMap = new Map<string, Record<string, number>>();
+    for (const metric of allCostMetrics) {
+      const dateStr = metric.timestamp.toISOString().split('T')[0];
+      const provider = metric.aiProvider || 'Unknown';
+      if (!timeSeriesMap.has(dateStr)) {
+        timeSeriesMap.set(dateStr, {});
+      }
+      const currentObj = timeSeriesMap.get(dateStr)!;
+      currentObj[provider] = (currentObj[provider] || 0) + metric.costUsd!;
+      currentObj.total = (currentObj.total || 0) + metric.costUsd!;
+    }
+
+    const costOverTime: CostDataPoint[] = [];
+    for (const [date, data] of timeSeriesMap.entries()) {
+      costOverTime.push({ date, ...data });
+    }
+
     return {
       totalCost: overallAgg._sum.costUsd || 0,
       monthlyBurnRate: monthAgg._sum.costUsd || 0,
       costByDocType,
       costByProvider,
+      costOverTime,
     };
   }
 }

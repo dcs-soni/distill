@@ -3,12 +3,14 @@ import { GetDashboardMetrics } from '../../../application/use-cases/GetDashboard
 import { GetAccuracyReport } from '../../../application/use-cases/GetAccuracyReport.js';
 import { GetCostReport } from '../../../application/use-cases/GetCostReport.js';
 import { GetReviewerReport } from '../../../application/use-cases/GetReviewerReport.js';
+import { GetThroughputReport } from '../../../application/use-cases/GetThroughputReport.js';
 
 interface MetricsRoutesOptions {
   getDashboardMetrics: GetDashboardMetrics;
   getAccuracyReport: GetAccuracyReport;
   getCostReport: GetCostReport;
   getReviewerReport: GetReviewerReport;
+  getThroughputReport: GetThroughputReport;
 }
 
 export const metricsRoutes = (options: MetricsRoutesOptions): FastifyPluginAsync => {
@@ -36,6 +38,12 @@ export const metricsRoutes = (options: MetricsRoutesOptions): FastifyPluginAsync
     fastify.get('/reports/reviewers', async (request, reply) => {
       const tenantId = (request.headers['x-tenant-id'] as string) || 'default-tenant';
       const result = await options.getReviewerReport.execute(tenantId);
+      return reply.send(result);
+    });
+
+    fastify.get('/reports/throughput', async (request, reply) => {
+      const tenantId = (request.headers['x-tenant-id'] as string) || 'default-tenant';
+      const result = await options.getThroughputReport.execute(tenantId);
       return reply.send(result);
     });
   };

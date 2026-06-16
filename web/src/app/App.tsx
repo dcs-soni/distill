@@ -11,6 +11,7 @@ import { DocumentsPage } from '@/pages/documents/DocumentsPage';
 import { DocumentDetailPage } from '@/pages/documents/DocumentDetailPage';
 import { ReviewQueuePage } from '@/pages/review/ReviewQueuePage';
 import { ReviewDetailPage } from '@/pages/review/ReviewDetailPage';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,10 +45,7 @@ export function App() {
                 {/* Review Routes */}
                 <Route path="/reviews" element={<ReviewQueuePage />} />
                 <Route path="/reviews/:id" element={<ReviewDetailPage />} />
-                <Route
-                  path="/analytics"
-                  element={<PlaceholderPage title="Analytics" milestone="M8" />}
-                />
+                <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route
                   path="/settings"
                   element={<PlaceholderPage title="Settings" milestone="M9" />}

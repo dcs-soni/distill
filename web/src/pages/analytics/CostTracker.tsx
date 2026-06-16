@@ -131,7 +131,7 @@ export function CostTracker() {
                   color: 'var(--color-foreground)',
                   borderRadius: '0.5rem',
                 }}
-                formatter={(value: any, name: any) => [
+                formatter={(value: unknown, name: unknown) => [
                   `$${Number(value).toFixed(4)}`,
                   String(name),
                 ]}

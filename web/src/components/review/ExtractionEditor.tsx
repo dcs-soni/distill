@@ -71,7 +71,7 @@ export function ExtractionEditor({
 
           return (
             <div
-              key={field}
+              key={field as string}
               className={cn(
                 'p-3 rounded-lg border transition-colors',
                 isEdited ? 'border-indigo-300 bg-indigo-50/30' : 'border-slate-200 bg-white'

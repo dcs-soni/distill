@@ -115,7 +115,7 @@ export function ConfidenceHeatmap({ extraction, overallConfidence }: ConfidenceH
               const conf = fieldData.confidence;
 
               return (
-                <div key={field} className="group">
+                <div key={field as string} className="group">
                   <div className="flex justify-between items-end mb-1">
                     <span className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
                       {conf < 0.7 ? <AlertCircle className="w-3 h-3 text-red-500" /> : null}

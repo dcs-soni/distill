@@ -225,7 +225,7 @@ export function ReviewDetailPage() {
             {/* Actions Section (Sticky Bottom) */}
             <div className="shrink-0 mt-auto shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
               <ReviewActions
-                reviewId={id}
+                reviewId={id ?? ''}
                 hasCorrections={hasCorrections}
                 onAction={(a, n, d) => {
                   void handleAction(a, n, d);

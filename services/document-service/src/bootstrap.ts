@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
-import { AppError, logger } from '@distill/utils';
+import { AppError, logger, setupMetrics } from '@distill/utils';
 
 import { PrismaDocumentRepository } from './infrastructure/persistence/PrismaDocumentRepository.js';
 import { S3StorageAdapter } from './infrastructure/storage/S3StorageAdapter.js';
@@ -125,9 +125,7 @@ server.get('/ready', async (_, reply) => {
   return reply.send({ status: 'ready' });
 });
 
-server.get('/metrics', async (_, reply) => {
-  return reply.send('# HELP placeholder metrics output\n# TYPE placeholder counter\n');
-});
+void setupMetrics(server, 'document-service');
 
 const start = async () => {
   try {

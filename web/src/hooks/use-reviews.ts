@@ -19,8 +19,8 @@ export function usePendingReviews(options: PendingReviewOptions = {}) {
 
 export function useReviewDetail(id: string | undefined) {
   return useQuery({
-    queryKey: reviewKeys.detail(id),
-    queryFn: () => reviewApi.getDetail(id),
+    queryKey: reviewKeys.detail(id ?? ''),
+    queryFn: () => reviewApi.getDetail(id ?? ''),
     enabled: !!id,
   });
 }

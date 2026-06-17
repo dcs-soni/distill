@@ -1,3 +1,4 @@
+import { setupMetrics } from '@distill/utils';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -33,9 +34,7 @@ server.get('/ready', async (_, reply) => {
   return reply.send({ status: 'ready' });
 });
 
-server.get('/metrics', async (_, reply) => {
-  return reply.send('# HELP placeholder metrics output\n# TYPE placeholder counter\n');
-});
+void setupMetrics(server, 'review-service');
 
 // Error handler
 server.setErrorHandler((error, request, reply) => {

@@ -79,7 +79,7 @@ export async function buildServer() {
     return { status: 'ready' };
   });
 
-  void setupMetrics(server, 'gateway');
+  await setupMetrics(server, 'gateway');
 
   const isTest = process.env.NODE_ENV === 'test' || process.env.REDIS_URL === 'redis://mocked';
 

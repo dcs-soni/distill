@@ -65,7 +65,7 @@ describe('Gateway Server', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toContain('text/plain');
-    expect(response.payload).toContain('http_request_duration_ms');
+    expect(response.payload).toContain('http_request_duration_seconds');
   });
   it('should reject requests without authorization header to protected routes', async () => {
     const response = await app.inject({

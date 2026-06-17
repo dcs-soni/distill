@@ -27,7 +27,11 @@ const oidcPlugin: FastifyPluginAsync<OidcPluginOptions> = async (fastify, option
   });
 
   fastify.addHook('onClose', async () => {
-    await redis.quit();
+    if (options.isTest) {
+      redis.disconnect();
+    } else {
+      await redis.quit();
+    }
   });
 
   const whiteList = ['/health', '/ready', '/api/auth/authorize', '/api/auth/callback', '/metrics'];

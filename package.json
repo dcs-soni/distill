@@ -4,10 +4,10 @@
   "private": true,
   "description": "Distill — Enterprise Financial Data Extraction Platform",
   "workspaces": [
+    "shared/*",
     "gateway",
     "services/*",
-    "web",
-    "shared/*"
+    "web"
   ],
   "engines": {
     "node": ">=20.0.0"

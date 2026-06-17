@@ -27,9 +27,7 @@ const oidcPlugin: FastifyPluginAsync<OidcPluginOptions> = async (fastify, option
   });
 
   fastify.addHook('onClose', async () => {
-    if (options.isTest) {
-      redis.disconnect();
-    } else {
+    if (!options.isTest) {
       await redis.quit();
     }
   });
